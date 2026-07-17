@@ -1438,3 +1438,317 @@ body.light-theme .teacher-class-stats {
     font-size: 14px;
     font-weight: 700;
 }
+
+/* ==========================================================================
+   COMPREHENSIVE MOBILE RESPONSIVENESS FIX
+   Breakpoint: < 768px (Mobile)
+   Breakpoint: 768px - 1024px (Tablet)
+   ========================================================================== */
+
+/* --- Global Mobile Fixes --- */
+@media (max-width: 768px) {
+
+    /* Header bar — relative so absolute topbar-actions works */
+    .header-bar {
+        position: relative;
+        flex-direction: row;
+        align-items: flex-start;
+        padding-top: 8px;
+    }
+
+    .welcome-section h1 {
+        font-size: 20px;
+    }
+
+    .welcome-section p {
+        font-size: 12px;
+        flex-wrap: wrap;
+    }
+
+    /* Always show topbar-actions at top-right */
+    .topbar-actions {
+        position: absolute !important;
+        top: 0 !important;
+        right: 0 !important;
+        gap: 8px;
+    }
+
+    /* Stats grid — 1 column on mobile */
+    .stats-grid {
+        grid-template-columns: 1fr 1fr !important;
+        gap: 12px;
+        margin-bottom: 20px;
+    }
+
+    .stat-card {
+        padding: 16px;
+    }
+
+    .stat-value {
+        font-size: 24px !important;
+    }
+
+    /* Dashboard row — always 1 column on mobile */
+    .dashboard-row {
+        grid-template-columns: 1fr !important;
+        gap: 16px;
+        margin-bottom: 20px;
+    }
+
+    /* Panel card padding reduction */
+    .panel-card {
+        padding: 16px;
+    }
+
+    /* Panel title — wrap button to next line on mobile */
+    .panel-title {
+        font-size: 15px;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    /* Alert banner — stack vertically */
+    .alert-banner {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+        padding: 14px 16px;
+    }
+
+    .alert-actions {
+        width: 100%;
+    }
+
+    .alert-actions .btn-action-solid {
+        width: 100%;
+        justify-content: center;
+    }
+
+    /* --- STUDY PAGE (Belajar Tab) MAJOR FIX --- */
+    /* Stack PDF viewer above AI chat on mobile */
+    .study-container {
+        grid-template-columns: 1fr !important;
+        height: auto !important;
+        gap: 16px;
+    }
+
+    .pdf-viewer-panel {
+        height: auto !important;
+        min-height: 300px;
+    }
+
+    .pdf-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+        padding: 12px 14px;
+    }
+
+    /* PDF page navigation buttons wrap */
+    .pdf-header > div:last-child {
+        display: flex;
+        width: 100%;
+        justify-content: space-between;
+    }
+
+    .pdf-content {
+        padding: 16px;
+    }
+
+    .pdf-page {
+        padding: 20px 16px;
+        min-height: 200px;
+    }
+
+    /* AI tutor panel height on mobile */
+    .ai-tutor-panel {
+        height: 500px !important;
+    }
+
+    .chat-messages {
+        max-height: calc(100% - 160px) !important;
+    }
+
+    /* Quick action buttons wrap on mobile */
+    .quick-questions-wrapper {
+        padding: 8px 12px;
+        gap: 6px;
+        flex-wrap: wrap;
+        white-space: normal;
+        overflow-x: hidden;
+    }
+
+    .quick-btn {
+        font-size: 11px;
+        padding: 6px 10px;
+    }
+
+    /* Chat input area */
+    .chat-input-area {
+        padding: 10px 14px;
+        gap: 8px;
+    }
+
+    .message-bubble {
+        max-width: 92%;
+        font-size: 13px;
+    }
+
+    /* --- CODE INPUTS (Presensi) OVERFLOW FIX --- */
+    .code-inputs-group {
+        gap: 5px;
+    }
+
+    .code-inputs-group input {
+        width: 38px;
+        height: 48px;
+        font-size: 20px;
+    }
+
+    .presensi-submit-box {
+        padding: 24px 16px;
+        margin: 20px auto;
+    }
+
+    /* --- TABLE FIX --- */
+    /* Make tables horizontally scrollable */
+    .table-responsive {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .custom-table {
+        min-width: 520px;
+    }
+
+    /* --- WALI KELAS CARD --- */
+    .wali-kelas-card {
+        padding: 24px 20px;
+    }
+
+    .wali-kelas-title {
+        font-size: 18px;
+    }
+
+    .wali-kelas-actions {
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .wali-kelas-btn {
+        width: 100%;
+        text-align: center;
+    }
+
+    /* --- TEACHER CLASS GRID --- */
+    .teacher-class-grid {
+        grid-template-columns: 1fr !important;
+    }
+
+    /* --- MEMBERS GRID --- */
+    .members-grid {
+        grid-template-columns: 1fr 1fr !important;
+    }
+
+    /* --- ATTENDANCE SETUP GRID --- */
+    .attendance-setup {
+        grid-template-columns: 1fr !important;
+    }
+
+    /* Active code display */
+    .code-display {
+        font-size: 36px !important;
+        letter-spacing: 3px !important;
+    }
+
+    /* Upload area */
+    .upload-area {
+        padding: 20px 16px;
+    }
+
+    /* Material item */
+    .material-item {
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+
+    /* Modal - full width on mobile */
+    .modal-content {
+        width: 95%;
+        padding: 20px;
+        max-height: 95vh;
+    }
+
+    /* Bottom nav label font */
+    .bottom-nav-item {
+        font-size: 9px;
+    }
+
+    .bottom-nav-item svg {
+        width: 22px;
+        height: 22px;
+    }
+
+    /* Action buttons in panel titles */
+    .btn-action-solid, .btn-action-outline {
+        font-size: 12px;
+        padding: 6px 12px;
+    }
+}
+
+/* --- Tablet tweaks (768px - 1024px) --- */
+@media (min-width: 769px) and (max-width: 1024px) {
+    .main-content {
+        padding: 28px 24px;
+    }
+
+    .study-container {
+        grid-template-columns: 1fr !important;
+        height: auto !important;
+    }
+
+    .pdf-viewer-panel {
+        height: 400px;
+    }
+
+    .ai-tutor-panel {
+        height: 500px;
+    }
+
+    .stats-grid {
+        grid-template-columns: repeat(2, 1fr) !important;
+    }
+
+    .teacher-class-grid {
+        grid-template-columns: repeat(2, 1fr) !important;
+    }
+
+    .members-grid {
+        grid-template-columns: repeat(2, 1fr) !important;
+    }
+}
+
+/* --- Extra small phones (< 390px) --- */
+@media (max-width: 390px) {
+    .code-inputs-group input {
+        width: 32px;
+        height: 42px;
+        font-size: 18px;
+    }
+
+    .code-inputs-group {
+        gap: 4px;
+    }
+
+    .stats-grid {
+        grid-template-columns: 1fr !important;
+    }
+
+    .welcome-section h1 {
+        font-size: 17px;
+    }
+
+    .main-content {
+        padding: 16px 12px 80px 12px !important;
+    }
+}
