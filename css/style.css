@@ -399,6 +399,7 @@ button, input, select, textarea {
 /* Main Content Area */
 .main-content {
     flex-grow: 1;
+    width: calc(100% - var(--sidebar-width));
     margin-left: var(--sidebar-width);
     padding: 40px;
     min-height: 100vh;
@@ -770,7 +771,7 @@ button, input, select, textarea {
 /* Student Main Study View (siswa.html / study tab) */
 .study-container {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
     gap: 24px;
     height: calc(100vh - 190px);
 }
@@ -876,6 +877,7 @@ button, input, select, textarea {
     font-size: 14px;
     line-height: 1.6;
     animation: fadeIn 0.25s ease-out;
+    word-wrap: break-word;
 }
 
 .message-user {

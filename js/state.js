@@ -1,23 +1,32 @@
 // state.js - Centralized state management using LocalStorage
 
 const DEFAULT_USERS = [
+    { username: 'admin', name: 'Super Admin', role: 'admin', password: 'password' },
     { username: 'guru', name: 'Budi Utomo, S.Pd.', role: 'guru', password: 'password' },
+    { username: 'guru2', name: 'Siti Aminah, S.Pd.', role: 'guru', password: 'password' },
     { username: 'siswa', name: 'Andi Wijaya', role: 'siswa', password: 'password' },
     { username: 'siswa2', name: 'Siti Rahma', role: 'siswa', password: 'password' },
-    { username: 'wali', name: 'Sri Wahyuni, S.Pd.', role: 'walikelas', password: 'password' }
+    { username: 'siswa_dewi', name: 'Dewi Lestari', role: 'siswa', password: 'password' },
+    { username: 'siswa_rian', name: 'Rian Hidayat', role: 'siswa', password: 'password' },
+    { username: 'siswa_eko', name: 'Eko Prasetyo', role: 'siswa', password: 'password' }
+];
+
+const DEFAULT_CLASSES = [
+    { id: 'cls-1', name: 'VIII-A' },
+    { id: 'cls-2', name: 'VIII-B' }
 ];
 
 const DEFAULT_STUDENTS = [
-    { id: '1', name: 'Andi Wijaya', username: 'siswa' },
-    { id: '2', name: 'Siti Rahma', username: 'siswa2' },
-    { id: '3', name: 'Dewi Lestari', username: 'siswa_dewi' },
-    { id: '4', name: 'Rian Hidayat', username: 'siswa_rian' },
-    { id: '5', name: 'Eko Prasetyo', username: 'siswa_eko' }
+    { id: 'std-1', name: 'Andi Wijaya', username: 'siswa', classId: 'cls-1' },
+    { id: 'std-2', name: 'Siti Rahma', username: 'siswa2', classId: 'cls-1' },
+    { id: 'std-3', name: 'Dewi Lestari', username: 'siswa_dewi', classId: 'cls-2' },
+    { id: 'std-4', name: 'Rian Hidayat', username: 'siswa_rian', classId: 'cls-2' },
+    { id: 'std-5', name: 'Eko Prasetyo', username: 'siswa_eko', classId: 'cls-1' }
 ];
 
 const DEFAULT_SUBJECTS = [
-    { id: 'sub-1', name: 'Matematika', teacher: 'Budi Utomo, S.Pd.', schedule: 'Kamis, 08:00 - 09:30 WIB', joinCode: 'MATH8A' },
-    { id: 'sub-2', name: 'Bahasa Indonesia', teacher: 'Siti Aminah, S.Pd.', schedule: 'Senin, 10:00 - 11:30 WIB', joinCode: 'IND8A' }
+    { id: 'sub-1', name: 'Matematika', teacherUsername: 'guru', schedule: 'Kamis, 08:00 - 09:30 WIB', joinCode: 'MATH8A', classIds: ['cls-1', 'cls-2'] },
+    { id: 'sub-2', name: 'Bahasa Indonesia', teacherUsername: 'guru2', schedule: 'Senin, 10:00 - 11:30 WIB', joinCode: 'IND8A', classIds: ['cls-1'] }
 ];
 
 const DEFAULT_MATERIALS = [
@@ -81,55 +90,23 @@ const StorageManager = {
 // Initialize State (with schema migration)
 function initState() {
     // === SCHEMA MIGRATION ===
-    // If existing edu_users doesn't have a 'walikelas' user, reset to new defaults.
-    const existingUsers = localStorage.getItem('edu_users');
-    if (existingUsers) {
-        try {
-            const parsedUsers = JSON.parse(existingUsers);
-            const hasWali = parsedUsers.some(u => u.role === 'walikelas');
-            if (!hasWali) {
-                // Old schema detected — wipe all stale keys and re-init fresh
-                const keysToReset = [
-                    'edu_users', 'edu_students', 'edu_subjects',
-                    'edu_materials', 'edu_questions',
-                    'edu_attendance_session', 'edu_attendance_records'
-                ];
-                keysToReset.forEach(k => localStorage.removeItem(k));
-                console.info('[EduClass] Schema migrated: localStorage reset to new version.');
-            }
-        } catch (e) {
-            // Corrupt data — clear everything
-            localStorage.clear();
-        }
-    }
-
-    // Also migrate stale attendance records that don't have subjectId (old schema)
-    const existingRecords = localStorage.getItem('edu_attendance_records');
-    if (existingRecords) {
-        try {
-            const parsedRecords = JSON.parse(existingRecords);
-            const hasOldFormat = parsedRecords.length > 0 && !parsedRecords[0].subjectId;
-            if (hasOldFormat) {
-                localStorage.removeItem('edu_attendance_records');
-                console.info('[EduClass] Attendance records migrated to subject-based schema.');
-            }
-        } catch (e) {
-            localStorage.removeItem('edu_attendance_records');
-        }
+    const currentSchemaVersion = 'v2_superadmin';
+    const savedVersion = localStorage.getItem('edu_schema_version');
+    
+    if (savedVersion !== currentSchemaVersion) {
+        // Old schema detected — wipe all stale keys and re-init fresh
+        localStorage.clear();
+        localStorage.setItem('edu_schema_version', currentSchemaVersion);
+        console.info('[EduClass] Schema migrated to ' + currentSchemaVersion + ': localStorage reset.');
     }
 
     // === NORMAL INIT ===
-    // 1. Users
     StorageManager.get('edu_users', DEFAULT_USERS);
-    // 2. Students list
+    StorageManager.get('edu_classes', DEFAULT_CLASSES);
     StorageManager.get('edu_students', DEFAULT_STUDENTS);
-    // 3. Subjects list
     StorageManager.get('edu_subjects', DEFAULT_SUBJECTS);
-    // 4. Materials list
     StorageManager.get('edu_materials', DEFAULT_MATERIALS);
-    // 5. Questions raised to AI
     StorageManager.get('edu_questions', DEFAULT_QUESTIONS);
-    // 6. Active attendance session
     StorageManager.get('edu_attendance_session', {
         subjectId: null,
         code: null,
@@ -138,15 +115,18 @@ function initState() {
         durationMinutes: 5
     });
     
-    // 7. Attendance records
     const dateStr = new Date().toISOString().split('T')[0];
     const initialRecords = [];
     DEFAULT_SUBJECTS.forEach(sub => {
-        DEFAULT_STUDENTS.forEach(s => {
+        // Only students in this subject's classes
+        const classes = StorageManager.get('edu_classes', DEFAULT_CLASSES).filter(c => sub.classIds.includes(c.id));
+        const students = StorageManager.get('edu_students', DEFAULT_STUDENTS).filter(s => classes.some(c => c.id === s.classId));
+        
+        students.forEach(s => {
             let status = 'Belum Presensi';
             let time = '-';
-            if (sub.id === 'sub-2') { // Demo: Bahasa Indonesia already finished
-                status = s.id === '3' ? 'Sakit' : (s.id === '5' ? 'Alfa' : 'Hadir');
+            if (sub.id === 'sub-2') { 
+                status = s.id === 'std-3' ? 'Sakit' : (s.id === 'std-5' ? 'Alfa' : 'Hadir');
                 time = status === 'Hadir' ? '10:05' : '-';
             }
             initialRecords.push({
@@ -184,29 +164,125 @@ const AppState = {
         }
         return { success: false, message: 'Username atau Password salah!' };
     },
+    getUsers() {
+        return StorageManager.get('edu_users', DEFAULT_USERS);
+    },
+    
+    // Guru (Users with role guru)
+    getTeachers() {
+        return this.getUsers().filter(u => u.role === 'guru');
+    },
+    addTeacher(name, username, password) {
+        const users = this.getUsers();
+        if (users.some(u => u.username === username)) return false;
+        users.push({ username, name, role: 'guru', password: password || 'password' });
+        StorageManager.set('edu_users', users);
+        return true;
+    },
+    updateTeacher(oldUsername, name, newUsername, password) {
+        const users = this.getUsers();
+        const idx = users.findIndex(u => u.username === oldUsername);
+        if (idx !== -1) {
+            users[idx].name = name;
+            if (newUsername && newUsername !== oldUsername) {
+                if (users.some(u => u.username === newUsername)) return false;
+                users[idx].username = newUsername;
+            }
+            if (password) {
+                users[idx].password = password;
+            }
+            StorageManager.set('edu_users', users);
+            
+            // cascade update subject
+            const subjects = this.getSubjects();
+            subjects.forEach(s => {
+                if(s.teacherUsername === oldUsername) {
+                    s.teacherUsername = newUsername || oldUsername;
+                }
+            });
+            StorageManager.set('edu_subjects', subjects);
+            return true;
+        }
+        return false;
+    },
+    deleteTeacher(username) {
+        let users = this.getUsers();
+        users = users.filter(u => u.username !== username);
+        StorageManager.set('edu_users', users);
+        
+        let subjects = this.getSubjects();
+        subjects.forEach(s => {
+            if(s.teacherUsername === username) s.teacherUsername = null;
+        });
+        StorageManager.set('edu_subjects', subjects);
+        return true;
+    },
 
-    // Subjects (CRUD for Wali Kelas)
+    // Classes
+    getClasses() {
+        return StorageManager.get('edu_classes', DEFAULT_CLASSES);
+    },
+    addClass(name) {
+        const classes = this.getClasses();
+        const newClass = { id: 'cls-' + Date.now(), name };
+        classes.push(newClass);
+        StorageManager.set('edu_classes', classes);
+        return newClass;
+    },
+    updateClass(id, name) {
+        const classes = this.getClasses();
+        const idx = classes.findIndex(c => c.id === id);
+        if (idx !== -1) {
+            classes[idx].name = name;
+            StorageManager.set('edu_classes', classes);
+            return true;
+        }
+        return false;
+    },
+    deleteClass(id) {
+        let classes = this.getClasses();
+        classes = classes.filter(c => c.id !== id);
+        StorageManager.set('edu_classes', classes);
+        
+        // cascade
+        let students = this.getStudents();
+        students.forEach(s => {
+            if (s.classId === id) s.classId = null;
+        });
+        StorageManager.set('edu_students', students);
+        
+        let subjects = this.getSubjects();
+        subjects.forEach(s => {
+            s.classIds = s.classIds.filter(cid => cid !== id);
+        });
+        StorageManager.set('edu_subjects', subjects);
+        
+        return true;
+    },
+
+    // Subjects
     getSubjects() {
         return StorageManager.get('edu_subjects', DEFAULT_SUBJECTS);
     },
-    addSubject(name, teacher, schedule, joinCode) {
+    addSubject(name, teacherUsername, schedule, joinCode, classIds = []) {
         const subjects = this.getSubjects();
         const newSub = {
-            id: 'sub-' + (subjects.length + 1) + '-' + Math.floor(Math.random() * 1000),
+            id: 'sub-' + Date.now(),
             name,
-            teacher,
+            teacherUsername,
             schedule,
-            joinCode
+            joinCode,
+            classIds
         };
         subjects.push(newSub);
         StorageManager.set('edu_subjects', subjects);
         return newSub;
     },
-    updateSubject(id, name, teacher, schedule, joinCode) {
+    updateSubject(id, name, teacherUsername, schedule, joinCode, classIds) {
         const subjects = this.getSubjects();
         const idx = subjects.findIndex(s => s.id === id);
         if (idx !== -1) {
-            subjects[idx] = { ...subjects[idx], name, teacher, schedule, joinCode };
+            subjects[idx] = { ...subjects[idx], name, teacherUsername, schedule, joinCode, classIds: classIds || subjects[idx].classIds };
             StorageManager.set('edu_subjects', subjects);
             return { success: true };
         }
@@ -219,6 +295,72 @@ const AppState = {
         return { success: true };
     },
 
+    // Students
+    getStudents() {
+        return StorageManager.get('edu_students', DEFAULT_STUDENTS);
+    },
+    addStudent(name, username, password, classId) {
+        const students = this.getStudents();
+        const users = this.getUsers();
+        
+        if (users.some(u => u.username === username)) {
+            return false;
+        }
+        
+        const newId = 'std-' + Date.now();
+        const newStudent = { id: newId, name: name.trim(), username, classId };
+        students.push(newStudent);
+        StorageManager.set('edu_students', students);
+
+        const newUser = { username, name: name.trim(), role: 'siswa', password: password || 'password' };
+        users.push(newUser);
+        StorageManager.set('edu_users', users);
+
+        return newStudent;
+    },
+    updateStudent(id, name, username, classId, password) {
+        const students = this.getStudents();
+        let users = this.getUsers();
+        const idx = students.findIndex(s => s.id === id);
+        
+        if (idx !== -1) {
+            const oldUsername = students[idx].username;
+            
+            // If username changes, check availability
+            if (username && username !== oldUsername) {
+                if (users.some(u => u.username === username)) return false;
+            }
+            
+            students[idx].name = name;
+            students[idx].classId = classId;
+            if (username) students[idx].username = username;
+            StorageManager.set('edu_students', students);
+            
+            const userIdx = users.findIndex(u => u.username === oldUsername);
+            if(userIdx !== -1) {
+                users[userIdx].name = name;
+                if(username) users[userIdx].username = username;
+                if(password) users[userIdx].password = password;
+                StorageManager.set('edu_users', users);
+            }
+            return true;
+        }
+        return false;
+    },
+    deleteStudent(id) {
+        let students = this.getStudents();
+        const target = students.find(s => s.id === id);
+        if (!target) return false;
+
+        students = students.filter(s => s.id !== id);
+        StorageManager.set('edu_students', students);
+
+        let users = this.getUsers();
+        users = users.filter(u => u.username !== target.username);
+        StorageManager.set('edu_users', users);
+        return true;
+    },
+
     // Materials
     getMaterials(subjectId = null) {
         const mats = StorageManager.get('edu_materials', DEFAULT_MATERIALS);
@@ -229,8 +371,6 @@ const AppState = {
     },
     addMaterial(subjectId, title, description, pages) {
         const materials = StorageManager.get('edu_materials', DEFAULT_MATERIALS);
-        
-        // Simulation of AI Material summary (Q3 requirement)
         let summary = '';
         if (pages && pages.length > 0) {
             const bulletPoints = pages.slice(0, 3).map((p, i) => `${i + 1}) ${p.title}`).join(', ');
@@ -240,7 +380,7 @@ const AppState = {
         }
 
         const newMat = {
-            id: 'mat-' + (materials.length + 1) + '-' + Math.floor(Math.random() * 1000),
+            id: 'mat-' + Date.now(),
             subjectId,
             title,
             description,
@@ -252,19 +392,23 @@ const AppState = {
         StorageManager.set('edu_materials', materials);
         return newMat;
     },
+    deleteMaterial(id) {
+        let materials = StorageManager.get('edu_materials', DEFAULT_MATERIALS);
+        materials = materials.filter(m => m.id !== id);
+        StorageManager.set('edu_materials', materials);
+        return true;
+    },
 
     // Attendance
     getAttendanceSession() {
         const session = StorageManager.get('edu_attendance_session');
         if (session && session.active && session.expiresAt) {
-            // Check if expired
             if (Date.now() > new Date(session.expiresAt).getTime()) {
                 session.active = false;
                 session.code = null;
                 session.expiresAt = null;
                 StorageManager.set('edu_attendance_session', session);
                 
-                // Mark all "Belum Presensi" as "Alfa" when session expires
                 const dateStr = new Date().toISOString().split('T')[0];
                 this.finalizeAttendance(session.subjectId, dateStr);
             }
@@ -272,7 +416,7 @@ const AppState = {
         return session;
     },
     startAttendanceSession(subjectId, durationMinutes = 5) {
-        const code = Math.floor(100000 + Math.random() * 900000).toString(); // Generate 6-digit code
+        const code = Math.floor(100000 + Math.random() * 900000).toString();
         const expiresAt = new Date(Date.now() + durationMinutes * 60000).toISOString();
         const session = {
             subjectId,
@@ -283,40 +427,36 @@ const AppState = {
         };
         StorageManager.set('edu_attendance_session', session);
         
-        // Reset/init student attendance records for this subject and dateStr
         const dateStr = new Date().toISOString().split('T')[0];
         let records = StorageManager.get('edu_attendance_records', []);
         
-        // Remove existing records for this subject + dateStr (overwrite/restart)
         records = records.filter(r => !(r.subjectId === subjectId && r.date === dateStr));
         
-        const students = this.getStudents();
-        students.forEach(s => {
-            records.push({
-                id: `rec-${subjectId}-${dateStr}-${s.username}`,
-                subjectId,
-                date: dateStr,
-                studentName: s.name,
-                username: s.username,
-                status: 'Belum Presensi',
-                time: '-'
+        // Find students assigned to this subject via class
+        const subject = this.getSubjects().find(s => s.id === subjectId);
+        if(subject) {
+            const students = this.getStudents().filter(s => subject.classIds.includes(s.classId));
+            students.forEach(s => {
+                records.push({
+                    id: `rec-${subjectId}-${dateStr}-${s.username}`,
+                    subjectId,
+                    date: dateStr,
+                    studentName: s.name,
+                    username: s.username,
+                    status: 'Belum Presensi',
+                    time: '-'
+                });
             });
-        });
-        StorageManager.set('edu_attendance_records', records);
+            StorageManager.set('edu_attendance_records', records);
+        }
         
         return session;
     },
     submitAttendance(username, code) {
         const session = this.getAttendanceSession();
-        if (!session.active) {
-            return { success: false, message: 'Tidak ada sesi presensi aktif.' };
-        }
-        if (session.code !== code) {
-            return { success: false, message: 'Kode presensi salah!' };
-        }
-        if (Date.now() > new Date(session.expiresAt).getTime()) {
-            return { success: false, message: 'Sesi presensi telah kedaluwarsa!' };
-        }
+        if (!session.active) return { success: false, message: 'Tidak ada sesi presensi aktif.' };
+        if (session.code !== code) return { success: false, message: 'Kode presensi salah!' };
+        if (Date.now() > new Date(session.expiresAt).getTime()) return { success: false, message: 'Sesi presensi telah kedaluwarsa!' };
 
         const dateStr = new Date().toISOString().split('T')[0];
         const records = StorageManager.get('edu_attendance_records', []);
@@ -330,33 +470,13 @@ const AppState = {
             StorageManager.set('edu_attendance_records', records);
             return { success: true, message: 'Presensi berhasil dicatat!' };
         }
-        
-        // Fallback: create record if not exists
-        const student = this.getStudents().find(s => s.username === username);
-        if (student) {
-            records.push({
-                id: `rec-${session.subjectId}-${dateStr}-${username}`,
-                subjectId: session.subjectId,
-                date: dateStr,
-                studentName: student.name,
-                username: username,
-                status: 'Hadir',
-                time: new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })
-            });
-            StorageManager.set('edu_attendance_records', records);
-            return { success: true, message: 'Presensi berhasil dicatat!' };
-        }
-        return { success: false, message: 'Siswa tidak terdaftar di kelas.' };
+        return { success: false, message: 'Siswa tidak terdaftar di mata pelajaran ini.' };
     },
     getAttendanceRecords(subjectId = null, dateStr = null) {
         const records = StorageManager.get('edu_attendance_records', []);
         let filtered = records;
-        if (subjectId) {
-            filtered = filtered.filter(r => r.subjectId === subjectId);
-        }
-        if (dateStr) {
-            filtered = filtered.filter(r => r.date === dateStr);
-        }
+        if (subjectId) filtered = filtered.filter(r => r.subjectId === subjectId);
+        if (dateStr) filtered = filtered.filter(r => r.date === dateStr);
         return filtered;
     },
     updateAttendanceStatus(studentUsername, subjectId, dateStr, newStatus) {
@@ -364,29 +484,12 @@ const AppState = {
         const idx = records.findIndex(r => r.username === studentUsername && r.subjectId === subjectId && r.date === dateStr);
         if (idx !== -1) {
             records[idx].status = newStatus;
-            if (newStatus === 'Belum Presensi') {
-                records[idx].time = '-';
-            } else if (records[idx].time === '-' && newStatus !== 'Alfa') {
+            if (newStatus === 'Belum Presensi') records[idx].time = '-';
+            else if (records[idx].time === '-' && newStatus !== 'Alfa') {
                 records[idx].time = new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
             }
             StorageManager.set('edu_attendance_records', records);
             return true;
-        } else {
-            // Create record
-            const student = this.getStudents().find(s => s.username === studentUsername);
-            if (student) {
-                records.push({
-                    id: `rec-${subjectId}-${dateStr}-${studentUsername}`,
-                    subjectId,
-                    date: dateStr,
-                    studentName: student.name,
-                    username: studentUsername,
-                    status: newStatus,
-                    time: (newStatus !== 'Belum Presensi' && newStatus !== 'Alfa') ? new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) : '-'
-                });
-                StorageManager.set('edu_attendance_records', records);
-                return true;
-            }
         }
         return false;
     },
@@ -399,70 +502,45 @@ const AppState = {
                 updated = true;
             }
         });
-        if (updated) {
-            StorageManager.set('edu_attendance_records', records);
-        }
+        if (updated) StorageManager.set('edu_attendance_records', records);
     },
 
-    // Questions / Interactions
+    // Questions
     getQuestions() {
         return StorageManager.get('edu_questions', DEFAULT_QUESTIONS);
     },
     addQuestion(studentName, materialTitle, questionText) {
         const questions = this.getQuestions();
         const newQ = {
-            id: 'q-' + (questions.length + 1),
+            id: 'q-' + Date.now(),
             studentName,
             materialTitle,
             questionText,
             timestamp: new Date().toISOString()
         };
-        questions.unshift(newQ); // Add to the top
+        questions.unshift(newQ);
         StorageManager.set('edu_questions', questions);
         return newQ;
-    },
-
-    // Class Info
-    getClassDetails() {
-        return {
-            name: 'Kelas VIII-A',
-            level: 'VIII (Delapan)',
-            homeroomTeacher: 'Sri Wahyuni, S.Pd.'
-        };
-    },
-    getStudents() {
-        return StorageManager.get('edu_students', DEFAULT_STUDENTS);
     }
 };
 
-// Initialize on script load
 initState();
 window.AppState = AppState;
 
-// ==========================================================================
-// Global UI Logic (Theme, Mobile Drawer, Bottom Nav)
-// ==========================================================================
+// Global UI Logic
 document.addEventListener('DOMContentLoaded', () => {
-    // Theme Toggler
     const themeBtn = document.getElementById('btn-theme-toggle');
     const isLight = localStorage.getItem('edu_theme') === 'light';
     
-    if (isLight) {
-        document.body.classList.add('light-theme');
-    }
+    if (isLight) document.body.classList.add('light-theme');
 
     if (themeBtn) {
         themeBtn.addEventListener('click', () => {
             document.body.classList.toggle('light-theme');
-            if (document.body.classList.contains('light-theme')) {
-                localStorage.setItem('edu_theme', 'light');
-            } else {
-                localStorage.setItem('edu_theme', 'dark');
-            }
+            localStorage.setItem('edu_theme', document.body.classList.contains('light-theme') ? 'light' : 'dark');
         });
     }
 
-    // Hamburger & Drawer Logic
     const btnHamburger = document.getElementById('btn-hamburger');
     const drawer = document.getElementById('slide-drawer');
     const overlay = document.getElementById('drawer-overlay');
@@ -482,35 +560,24 @@ document.addEventListener('DOMContentLoaded', () => {
     if(btnCloseDrawer) btnCloseDrawer.addEventListener('click', closeDrawer);
     if(overlay) overlay.addEventListener('click', closeDrawer);
 
-    // Sync Bottom Nav Clicks with existing Tab logic (if any)
     const bottomNavItems = document.querySelectorAll('.bottom-nav-item');
     bottomNavItems.forEach(item => {
         item.addEventListener('click', () => {
             const tabName = item.getAttribute('data-tab');
-            // Try to find the corresponding sidebar menu item and click it
-            // This reuses the logic already written in guru.js / siswa.js / wali.js
             const sideMenuItem = document.querySelector(`.sidebar .menu-item[data-tab="${tabName}"]`);
-            if(sideMenuItem) {
-                sideMenuItem.click();
-            }
-            
-            // Highlight bottom nav
+            if(sideMenuItem) sideMenuItem.click();
             bottomNavItems.forEach(i => i.classList.remove('active'));
             item.classList.add('active');
         });
     });
 
-    // Also sync from sidebar clicks to bottom nav
     const sideMenuItems = document.querySelectorAll('.sidebar .menu-item');
     sideMenuItems.forEach(item => {
         item.addEventListener('click', () => {
             const tabName = item.getAttribute('data-tab');
             bottomNavItems.forEach(i => {
-                if(i.getAttribute('data-tab') === tabName) {
-                    i.classList.add('active');
-                } else {
-                    i.classList.remove('active');
-                }
+                if(i.getAttribute('data-tab') === tabName) i.classList.add('active');
+                else i.classList.remove('active');
             });
         });
     });

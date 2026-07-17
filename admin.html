@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dasbor Super Admin - EduClass AI</title>
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        .admin-stat-card {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: var(--radius-md);
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            box-shadow: var(--shadow-sm);
+        }
+        .admin-stat-value {
+            font-size: 32px;
+            font-weight: 800;
+            color: var(--accent-primary);
+        }
+        .admin-stat-label {
+            font-size: 14px;
+            color: var(--text-secondary);
+            font-weight: 600;
+        }
+        
+        .light-theme .admin-stat-card {
+            background: rgba(0, 0, 0, 0.02);
+            border: 1px solid rgba(0, 0, 0, 0.05);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="layout-wrapper">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="sidebar-logo">
+                    <span class="text-gradient">EduClass</span> <span class="text-gradient-purple">Admin</span>
+                </div>
+            </div>
+            
+            <ul class="sidebar-menu">
+                <li class="menu-item active" data-tab="dashboard">
+                    <svg viewBox="0 0 24 24"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>
+                    <span>Dashboard</span>
+                </li>
+                <li class="menu-item" data-tab="kelola-guru">
+                    <svg viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+                    <span>Kelola Guru</span>
+                </li>
+                <li class="menu-item" data-tab="kelola-siswa">
+                    <svg viewBox="0 0 24 24"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
+                    <span>Kelola Siswa</span>
+                </li>
+                <li class="menu-item" data-tab="kelola-kelas">
+                    <svg viewBox="0 0 24 24"><path d="M4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm16-4H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-1 9H9V9h10v2zm-4 4H9v-2h6v2zm4-8H9V5h10v2z"/></svg>
+                    <span>Kelola Kelas</span>
+                </li>
+                <li class="menu-item" data-tab="kelola-mapel">
+                    <svg viewBox="0 0 24 24"><path d="M12 3L1 9l11 6 9-4.91V17h2V9L12 3zM5.89 12.55L12 15.88l6.11-3.33c.6.9 2.03 3.65 2.03 6.95v.5H3.86v-.5c0-3.3 1.43-6.05 2.03-6.95z"/></svg>
+                    <span>Kelola Mapel</span>
+                </li>
+            </ul>
+
+            <div class="sidebar-footer">
+                <div class="user-profile">
+                    <div class="avatar" style="background: linear-gradient(135deg, var(--danger), var(--accent-secondary));">A</div>
+                    <div class="profile-info">
+                        <div class="profile-name">Super Admin</div>
+                        <div class="profile-role">Administrator</div>
+                    </div>
+                </div>
+                <button class="btn-logout">
+                    <svg style="width:16px;height:16px;" viewBox="0 0 24 24"><path d="M10.09 15.59L11.5 17l5-5-5-5-1.41 1.41L12.67 11H3v2h9.67l-2.58 2.59zM19 3H5c-1.11 0-2 .9-2 2v4h2V5h14v14H5v-4H3v4c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2z"/></svg>
+                    <span>Keluar</span>
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <header class="header-bar">
+                <div class="welcome-section">
+                    <h1>Selamat Datang, Super Admin</h1>
+                    <p>Pusat Pengelolaan Data EduClass AI | Hari ini: <span id="current-date">Kamis, 16 Juli 2026</span></p>
+                </div>
+                <div class="topbar-actions">
+                    <button class="btn-icon theme-toggle" id="btn-theme-toggle">
+                        <svg class="sun-icon" viewBox="0 0 24 24"><path d="M12 7c-2.76 0-5 2.24-5 5s2.24 5 5 5 5-2.24 5-5-2.24-5-5-5zM2 13h2c.55 0 1-.45 1-1s-.45-1-1-1H2c-.55 0-1 .45-1 1s.45 1 1 1zm18 0h2c.55 0 1-.45 1-1s-.45-1-1-1h-2c-.55 0-1 .45-1 1s.45 1 1 1zM11 2v2c0 .55.45 1 1 1s1-.45 1-1V2c0-.55-.45-1-1-1s-1 .45-1 1zm0 18v2c0 .55.45 1 1 1s1-.45 1-1v-2c0-.55-.45-1-1-1s-1 .45-1 1zM5.99 4.58c-.39-.39-1.03-.39-1.41 0-.39.39-.39 1.03 0 1.41l1.06 1.06c.39.39 1.03.39 1.41 0 .39-.39.39-1.03 0-1.41L5.99 4.58zm12.37 12.37c-.39-.39-1.03-.39-1.41 0-.39.39-.39 1.03 0 1.41l1.06 1.06c.39.39 1.03.39 1.41 0 .39-.39.39-1.03 0-1.41l-1.06-1.06zm1.06-10.96c.39-.39.39-1.03 0-1.41-.39-.39-1.03-.39-1.41 0l-1.06 1.06c-.39.39-.39 1.03 0 1.41.39.39 1.03.39 1.41 0l1.06-1.06zM7.05 18.36c.39-.39.39-1.03 0-1.41-.39-.39-1.03-.39-1.41 0l-1.06 1.06c-.39.39-.39 1.03 0 1.41.39.39 1.03.39 1.41 0l1.06-1.06z"/></svg>
+                        <svg class="moon-icon" viewBox="0 0 24 24"><path d="M12 3c-4.97 0-9 4.03-9 9s4.03 9 9 9 9-4.03 9-9c0-.46-.04-.92-.1-1.36-.98 1.37-2.58 2.26-4.4 2.26-2.98 0-5.4-2.42-5.4-5.4 0-1.81.89-3.42 2.26-4.4-.44-.06-.9-.1-1.36-.1z"/></svg>
+                    </button>
+                    <button class="btn-icon hamburger-btn" id="btn-hamburger">
+                        <svg viewBox="0 0 24 24"><path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/></svg>
+                    </button>
+                </div>
+            </header>
+
+            <!-- TABS PANELS -->
+            
+            <!-- 1. DASHBOARD PANEL -->
+            <section id="tab-dashboard" class="tab-panel active">
+                <div class="panel-title" style="margin-bottom: 16px;">Ringkasan Sistem</div>
+                <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 16px;">
+                    <div class="admin-stat-card">
+                        <div class="admin-stat-label">Total Guru</div>
+                        <div class="admin-stat-value" id="stat-guru">0</div>
+                    </div>
+                    <div class="admin-stat-card">
+                        <div class="admin-stat-label">Total Siswa</div>
+                        <div class="admin-stat-value" id="stat-siswa">0</div>
+                    </div>
+                    <div class="admin-stat-card">
+                        <div class="admin-stat-label">Total Kelas</div>
+                        <div class="admin-stat-value" id="stat-kelas">0</div>
+                    </div>
+                    <div class="admin-stat-card">
+                        <div class="admin-stat-label">Total Mapel</div>
+                        <div class="admin-stat-value" id="stat-mapel">0</div>
+                    </div>
+                    <div class="admin-stat-card">
+                        <div class="admin-stat-label">Total Materi</div>
+                        <div class="admin-stat-value" id="stat-materi">0</div>
+                    </div>
+                    <div class="admin-stat-card">
+                        <div class="admin-stat-label">Total Presensi Harian</div>
+                        <div class="admin-stat-value" id="stat-presensi">0</div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 2. KELOLA GURU PANEL -->
+            <section id="tab-kelola-guru" class="tab-panel">
+                <div class="glass-card panel-card">
+                    <div class="panel-title">
+                        <span>Data Guru</span>
+                        <button class="btn-action-solid" id="btn-add-guru">
+                            <svg style="width:16px;height:16px;" viewBox="0 0 24 24"><path d="M15 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm-9-2V7H4v3H1v2h3v3h2v-3h3v-2H6zm9 4c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+                            <span>Tambah Guru</span>
+                        </button>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="custom-table">
+                            <thead>
+                                <tr>
+                                    <th>Nama Guru</th>
+                                    <th>Username (Akun Login)</th>
+                                    <th style="width:180px; text-align: center;">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody id="guru-table-body">
+                                <!-- Dynamic rows -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 3. KELOLA SISWA PANEL -->
+            <section id="tab-kelola-siswa" class="tab-panel">
+                <div class="glass-card panel-card">
+                    <div class="panel-title">
+                        <span>Data Siswa</span>
+                        <button class="btn-action-solid" id="btn-add-siswa">
+                            <svg style="width:16px;height:16px;" viewBox="0 0 24 24"><path d="M15 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm-9-2V7H4v3H1v2h3v3h2v-3h3v-2H6zm9 4c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+                            <span>Tambah Siswa</span>
+                        </button>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="custom-table">
+                            <thead>
+                                <tr>
+                                    <th>Nama Siswa</th>
+                                    <th>Username (Akun Login)</th>
+                                    <th>Plotting Kelas</th>
+                                    <th style="width:180px; text-align: center;">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody id="siswa-table-body">
+                                <!-- Dynamic rows -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 4. KELOLA KELAS PANEL -->
+            <section id="tab-kelola-kelas" class="tab-panel">
+                <div class="glass-card panel-card">
+                    <div class="panel-title">
+                        <span>Data Kelas</span>
+                        <button class="btn-action-solid" id="btn-add-kelas">
+                            <svg style="width:16px;height:16px;" viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+                            <span>Tambah Kelas</span>
+                        </button>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="custom-table">
+                            <thead>
+                                <tr>
+                                    <th>Nama Kelas</th>
+                                    <th>Total Siswa</th>
+                                    <th style="width:180px; text-align: center;">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody id="kelas-table-body">
+                                <!-- Dynamic rows -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 5. KELOLA MAPEL PANEL -->
+            <section id="tab-kelola-mapel" class="tab-panel">
+                <div class="glass-card panel-card">
+                    <div class="panel-title">
+                        <span>Data Mata Pelajaran & Plotting</span>
+                        <button class="btn-action-solid" id="btn-add-mapel">
+                            <svg style="width:16px;height:16px;" viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+                            <span>Tambah Mapel</span>
+                        </button>
+                    </div>
+                    <p style="color: var(--text-secondary); font-size: 14px; margin-bottom: 16px;">
+                        Pada halaman ini Anda dapat menambahkan Mapel, memplot Guru ke Mapel tersebut, serta memplot Mapel ke banyak Kelas.
+                    </p>
+                    <div class="table-responsive">
+                        <table class="custom-table">
+                            <thead>
+                                <tr>
+                                    <th>Nama Mapel</th>
+                                    <th>Guru Pengampu</th>
+                                    <th>Plotting Kelas</th>
+                                    <th>Jadwal</th>
+                                    <th>Kode Akses</th>
+                                    <th style="width:180px; text-align: center;">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody id="mapel-table-body">
+                                <!-- Dynamic rows -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <!-- Modal Form Guru -->
+    <div class="modal-overlay" id="modal-guru">
+        <div class="glass-card modal-content fade-in">
+            <div class="modal-header">
+                <h3 id="modal-guru-title" style="font-size: 18px; font-weight: 700;">Tambah Guru</h3>
+                <span class="modal-close" id="btn-close-guru">&times;</span>
+            </div>
+            <form id="form-guru">
+                <input type="hidden" id="guru-old-username">
+                <div class="form-group">
+                    <label for="guru-name">Nama Lengkap</label>
+                    <input type="text" id="guru-name" class="input-field" required>
+                </div>
+                <div class="form-group">
+                    <label for="guru-username">Username</label>
+                    <input type="text" id="guru-username" class="input-field" required>
+                </div>
+                <div class="form-group">
+                    <label for="guru-password">Password</label>
+                    <input type="text" id="guru-password" class="input-field" value="password" required>
+                </div>
+                <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 24px;">
+                    <button type="button" class="btn-action-outline" id="btn-cancel-guru">Batal</button>
+                    <button type="submit" class="btn-action-solid">Simpan</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Form Siswa -->
+    <div class="modal-overlay" id="modal-siswa">
+        <div class="glass-card modal-content fade-in">
+            <div class="modal-header">
+                <h3 id="modal-siswa-title" style="font-size: 18px; font-weight: 700;">Tambah Siswa</h3>
+                <span class="modal-close" id="btn-close-siswa">&times;</span>
+            </div>
+            <form id="form-siswa">
+                <input type="hidden" id="siswa-id">
+                <input type="hidden" id="siswa-old-username">
+                <div class="form-group">
+                    <label for="siswa-name">Nama Lengkap</label>
+                    <input type="text" id="siswa-name" class="input-field" required>
+                </div>
+                <div class="form-group">
+                    <label for="siswa-username">Username</label>
+                    <input type="text" id="siswa-username" class="input-field" required>
+                </div>
+                <div class="form-group">
+                    <label for="siswa-password">Password</label>
+                    <input type="text" id="siswa-password" class="input-field" value="password" required>
+                </div>
+                <div class="form-group">
+                    <label for="siswa-kelas">Plotting Kelas</label>
+                    <select id="siswa-kelas" class="input-field" style="background-color: var(--bg-tertiary);">
+                        <option value="">-- Pilih Kelas --</option>
+                    </select>
+                </div>
+                <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 24px;">
+                    <button type="button" class="btn-action-outline" id="btn-cancel-siswa">Batal</button>
+                    <button type="submit" class="btn-action-solid">Simpan</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Form Kelas -->
+    <div class="modal-overlay" id="modal-kelas">
+        <div class="glass-card modal-content fade-in">
+            <div class="modal-header">
+                <h3 id="modal-kelas-title" style="font-size: 18px; font-weight: 700;">Tambah Kelas</h3>
+                <span class="modal-close" id="btn-close-kelas">&times;</span>
+            </div>
+            <form id="form-kelas">
+                <input type="hidden" id="kelas-id">
+                <div class="form-group">
+                    <label for="kelas-name">Nama Kelas</label>
+                    <input type="text" id="kelas-name" class="input-field" placeholder="Contoh: VIII-A" required>
+                </div>
+                <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 24px;">
+                    <button type="button" class="btn-action-outline" id="btn-cancel-kelas">Batal</button>
+                    <button type="submit" class="btn-action-solid">Simpan</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Form Mapel & Plotting -->
+    <div class="modal-overlay" id="modal-mapel">
+        <div class="glass-card modal-content fade-in">
+            <div class="modal-header">
+                <h3 id="modal-mapel-title" style="font-size: 18px; font-weight: 700;">Tambah Mata Pelajaran</h3>
+                <span class="modal-close" id="btn-close-mapel">&times;</span>
+            </div>
+            <form id="form-mapel">
+                <input type="hidden" id="mapel-id">
+                <div class="form-group">
+                    <label for="mapel-name">Nama Mapel</label>
+                    <input type="text" id="mapel-name" class="input-field" required>
+                </div>
+                <div class="form-group">
+                    <label for="mapel-guru">Guru Pengampu (Plotting Guru)</label>
+                    <select id="mapel-guru" class="input-field" style="background-color: var(--bg-tertiary);" required>
+                        <option value="">-- Pilih Guru --</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Plotting Kelas Tersedia (Bisa lebih dari 1)</label>
+                    <div id="mapel-kelas-checkboxes" style="display: flex; flex-direction: column; gap: 8px; margin-top: 8px; max-height: 150px; overflow-y: auto;">
+                        <!-- Checkboxes rendered here -->
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="mapel-schedule">Jadwal Kelas</label>
+                    <input type="text" id="mapel-schedule" class="input-field" required>
+                </div>
+                <div class="form-group">
+                    <label for="mapel-code">Kode Gabung</label>
+                    <input type="text" id="mapel-code" class="input-field" required>
+                </div>
+                <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 24px;">
+                    <button type="button" class="btn-action-outline" id="btn-cancel-mapel">Batal</button>
+                    <button type="submit" class="btn-action-solid">Simpan</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Mobile Drawer & Bottom Nav -->
+    <div class="drawer-overlay" id="drawer-overlay"></div>
+    <div class="slide-drawer" id="slide-drawer">
+        <div class="drawer-header">
+            <div class="sidebar-logo">
+                <span class="text-gradient">EduClass</span> <span class="text-gradient-purple">Admin</span>
+            </div>
+            <span class="modal-close" id="btn-close-drawer">&times;</span>
+        </div>
+        <div class="drawer-content">
+            <button class="btn-logout" id="btn-logout-drawer">
+                <svg style="width:16px;height:16px;" viewBox="0 0 24 24"><path d="M10.09 15.59L11.5 17l5-5-5-5-1.41 1.41L12.67 11H3v2h9.67l-2.58 2.59zM19 3H5c-1.11 0-2 .9-2 2v4h2V5h14v14H5v-4H3v4c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2z"/></svg>
+                <span>Keluar dari Akun</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Bottom Navigation Bar (Mobile) -->
+    <div class="bottom-nav" id="bottom-nav">
+        <div class="bottom-nav-item active" data-tab="dashboard">
+            <svg viewBox="0 0 24 24"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>
+            <span>Dash</span>
+        </div>
+        <div class="bottom-nav-item" data-tab="kelola-guru">
+            <svg viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4z"/></svg>
+            <span>Guru</span>
+        </div>
+        <div class="bottom-nav-item" data-tab="kelola-siswa">
+            <svg viewBox="0 0 24 24"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3z"/></svg>
+            <span>Siswa</span>
+        </div>
+        <div class="bottom-nav-item" data-tab="kelola-kelas">
+            <svg viewBox="0 0 24 24"><path d="M4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6z"/></svg>
+            <span>Kelas</span>
+        </div>
+        <div class="bottom-nav-item" data-tab="kelola-mapel">
+            <svg viewBox="0 0 24 24"><path d="M12 3L1 9l11 6 9-4.91V17h2V9L12 3z"/></svg>
+            <span>Mapel</span>
+        </div>
+    </div>
+
+    <!-- State, Auth & Controller Files -->
+    <script src="js/state.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/admin.js"></script>
+</body>
+</html>

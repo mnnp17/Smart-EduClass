@@ -11,6 +11,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
     document.getElementById('current-date').textContent = new Date().toLocaleDateString('id-ID', options);
 
+    // Helper to get subjects for this student
+    function getMySubjects() {
+        const student = window.AppState.getStudents().find(s => s.username === currentUser.username);
+        const myClassId = student ? student.classId : null;
+        return window.AppState.getSubjects().filter(sub => sub.classIds && sub.classIds.includes(myClassId));
+    }
+
     // Active Study State
     let activeMaterial = null;
     let activePageIdx = 0; // 0-indexed page tracker
@@ -48,7 +55,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function getActiveSessionSubjectName() {
         const session = window.AppState.getAttendanceSession();
         if (!session || !session.active) return null;
-        const subjects = window.AppState.getSubjects();
+        const subjects = getMySubjects();
         const sub = subjects.find(s => s.id === session.subjectId);
         return sub ? sub.name : 'Mata Pelajaran';
     }
@@ -85,12 +92,11 @@ document.addEventListener('DOMContentLoaded', () => {
     function refreshOverviewTab() {
         checkActiveAttendanceSession();
 
-        const classDetails = window.AppState.getClassDetails();
-        const subjects = window.AppState.getSubjects();
+        const _student = window.AppState.getStudents().find(s => s.username === currentUser.username);
+        const classDetails = window.AppState.getClasses().find(c => c.id === _student?.classId) || {name: 'Belum Punya Kelas'};
+        const subjects = getMySubjects();
 
-        // Update wali kelas info
-        document.getElementById('stat-wali-name').textContent = classDetails.homeroomTeacher;
-        document.getElementById('stat-class-desc').textContent = classDetails.name;
+        // Update wali kelas info (dihapus)
         document.getElementById('stat-total-mapel').textContent = subjects.length;
         document.getElementById('student-class-name').textContent = classDetails.name;
 
@@ -169,8 +175,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- KELAS TAB LOGIC ---
     function refreshKelasTab() {
-        const classDetails = window.AppState.getClassDetails();
-        const subjects = window.AppState.getSubjects();
+        const _student = window.AppState.getStudents().find(s => s.username === currentUser.username);
+        const classDetails = window.AppState.getClasses().find(c => c.id === _student?.classId) || {name: 'Belum Punya Kelas'};
+        const subjects = getMySubjects();
+        const allUsers = window.AppState.getUsers();
 
         // Update class label
         document.getElementById('kelas-class-label').textContent = classDetails.name;
@@ -180,13 +188,17 @@ document.addEventListener('DOMContentLoaded', () => {
         mapelTable.innerHTML = '';
 
         if (subjects.length === 0) {
-            mapelTable.innerHTML = `<tr><td colspan="4" style="text-align:center; color:var(--text-muted); padding:16px;">Belum ada mata pelajaran. Hubungi Wali Kelas.</td></tr>`;
+            mapelTable.innerHTML = `<tr><td colspan="4" style="text-align:center; color:var(--text-muted); padding:16px;">Belum ada mata pelajaran. Hubungi Super Admin.</td></tr>`;
         } else {
             subjects.forEach(sub => {
+                // Resolve nama guru dari teacherUsername
+                const teacherUser = allUsers.find(u => u.username === sub.teacherUsername);
+                const teacherName = teacherUser ? teacherUser.name : (sub.teacherUsername || '-');
+
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
                     <td style="font-weight:600;">${escapeHTML(sub.name)}</td>
-                    <td style="color:var(--text-secondary);">${escapeHTML(sub.teacher)}</td>
+                    <td style="color:var(--text-secondary);">${escapeHTML(teacherName)}</td>
                     <td>${escapeHTML(sub.schedule)}</td>
                     <td><span class="badge badge-info">${escapeHTML(sub.joinCode)}</span></td>
                 `;
@@ -198,19 +210,22 @@ document.addEventListener('DOMContentLoaded', () => {
         const membersGrid = document.getElementById('student-members-list-grid');
         membersGrid.innerHTML = '';
 
-        // Add Teacher(s) from subjects
+        // Add Teacher(s) from subjects — resolve nama dari teacherUsername
         const addedTeachers = new Set();
         subjects.forEach(sub => {
-            if (!addedTeachers.has(sub.teacher)) {
-                addedTeachers.add(sub.teacher);
+            if (sub.teacherUsername && !addedTeachers.has(sub.teacherUsername)) {
+                addedTeachers.add(sub.teacherUsername);
+                const teacherUser = allUsers.find(u => u.username === sub.teacherUsername);
+                const teacherName = teacherUser ? teacherUser.name : sub.teacherUsername;
+
                 const teacherCard = document.createElement('div');
                 teacherCard.className = 'glass-card member-card';
                 teacherCard.style.borderColor = 'rgba(99, 102, 241, 0.3)';
-                const initials = sub.teacher.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+                const initials = teacherName.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
                 teacherCard.innerHTML = `
                     <div class="avatar" style="background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-primary-hover) 100%);">${initials}</div>
                     <div>
-                        <div style="font-weight: 700;">${escapeHTML(sub.teacher)}</div>
+                        <div style="font-weight: 700;">${escapeHTML(teacherName)}</div>
                         <div style="font-size: 11px; color: var(--accent-primary); font-weight: 600;">Guru ${escapeHTML(sub.name)}</div>
                     </div>
                 `;
@@ -218,9 +233,9 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
-        // Add Students (Classmates)
-        const students = window.AppState.getStudents();
-        students.forEach(s => {
+        // Add Students — hanya teman satu kelas
+        const classmates = window.AppState.getStudents().filter(s => s.classId === _student?.classId);
+        classmates.forEach(s => {
             const isMe = s.username === currentUser.username;
             const card = document.createElement('div');
             card.className = 'glass-card member-card';
@@ -231,7 +246,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 <div class="avatar" style="background: #272a3d;">${initials}</div>
                 <div>
                     <div style="font-weight: 600;">${escapeHTML(s.name)} ${isMe ? '<span style="font-size:11px;color:var(--accent-secondary);font-weight:bold;">(Saya)</span>' : ''}</div>
-                    <div style="font-size: 11px; color: var(--text-secondary);">Siswa Kelas</div>
+                    <div style="font-size: 11px; color: var(--text-secondary);">Siswa Kelas ${escapeHTML(classDetails.name)}</div>
                 </div>
             `;
             membersGrid.appendChild(card);
@@ -284,7 +299,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function refreshPresensiTab() {
         const session = window.AppState.getAttendanceSession();
         const dateStr = new Date().toISOString().split('T')[0];
-        const subjects = window.AppState.getSubjects();
+        const subjects = getMySubjects();
 
         // --- Render History Table ---
         const historyBody = document.getElementById('student-attendance-history');
@@ -390,7 +405,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function renderStudyMaterialsList() {
         const materials = window.AppState.getMaterials();
-        const subjects = window.AppState.getSubjects();
+        const subjects = getMySubjects();
         const studyMatList = document.getElementById('study-tab-materials-list');
         studyMatList.innerHTML = '';
 

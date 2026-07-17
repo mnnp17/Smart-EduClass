@@ -15,12 +15,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const subjectSelect = document.getElementById('teacher-subject-select');
     
     function loadTeacherSubjects() {
-        const subjects = window.AppState.getSubjects();
+        const subjects = window.AppState.getSubjects().filter(s => s.teacherUsername === currentUser.username);
         subjectSelect.innerHTML = '';
         if (subjects.length === 0) {
             const opt = document.createElement('option');
             opt.value = '';
-            opt.textContent = 'Tidak Ada Mapel (Hubungi Wali Kelas)';
+            opt.textContent = 'Tidak Ada Mapel yang diampu';
             subjectSelect.appendChild(opt);
         } else {
             subjects.forEach(sub => {
@@ -39,7 +39,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function getActiveSubjectName() {
-        const subjects = window.AppState.getSubjects();
+        const subjects = window.AppState.getSubjects().filter(s => s.teacherUsername === currentUser.username);
         const activeSub = subjects.find(s => s.id === getActiveSubjectId());
         return activeSub ? activeSub.name : '';
     }
@@ -78,6 +78,8 @@ document.addEventListener('DOMContentLoaded', () => {
             refreshPresensiTab();
         } else if (tabName === 'materi') {
             refreshMateriTab();
+        } else if (tabName === 'mapel') {
+            refreshMapelTab();
         }
     }
 
@@ -85,16 +87,10 @@ document.addEventListener('DOMContentLoaded', () => {
     function refreshOverviewTab() {
         const activeSubId = getActiveSubjectId();
         const students = window.AppState.getStudents();
-        const subjects = window.AppState.getSubjects();
+        const subjects = window.AppState.getSubjects().filter(s => s.teacherUsername === currentUser.username);
         const dateStr = new Date().toISOString().split('T')[0];
         
-        // 1. Wali Kelas Status
-        const waliStatus = document.getElementById('general-wali-status');
-        if (waliStatus) {
-            waliStatus.textContent = 'Anda adalah Wali Kelas: VIII-A';
-        }
-
-        // 2. Daftar Kelas (Grid)
+        // (Status Wali Kelas dihapus)        // 2. Daftar Kelas (Grid)
         const classGrid = document.getElementById('general-class-grid');
         if (classGrid) {
             classGrid.innerHTML = '';
@@ -107,19 +103,28 @@ document.addEventListener('DOMContentLoaded', () => {
                     const isJournalFilled = attendance && attendance.length > 0;
                     const journalStatus = isJournalFilled ? '<span style="color:var(--success);">Sudah Terisi</span>' : '<span style="color:var(--warning);">Belum Terisi</span>';
                     
+                    // Display Class Name(s) instead of hardcoded VIII-A
+                    const classes = window.AppState.getClasses();
+                    const classNames = (sub.classIds || []).map(cid => {
+                        const c = classes.find(x => x.id === cid);
+                        return c ? c.name : null;
+                    }).filter(x => x).join(', ') || 'Belum diplot';
+                    
+                    const subStudentsCount = students.filter(st => (sub.classIds || []).includes(st.classId)).length;
+
                     const card = document.createElement('div');
                     card.className = 'glass-card teacher-class-card';
                     card.innerHTML = `
                         <div class="teacher-class-header">
                             <div>
-                                <div class="teacher-class-name">${escapeHTML(sub.name)} - VIII-A</div>
+                                <div class="teacher-class-name">${escapeHTML(sub.name)} - ${escapeHTML(classNames)}</div>
                                 <div class="teacher-class-sub">Kode: ${escapeHTML(sub.joinCode)}</div>
                             </div>
                         </div>
                         <div class="teacher-class-stats">
                             <div class="teacher-class-stat-item">
                                 <span class="teacher-class-stat-label">Total Siswa</span>
-                                <span class="teacher-class-stat-val">${students.length} Siswa</span>
+                                <span class="teacher-class-stat-val">${subStudentsCount} Siswa</span>
                             </div>
                             <div class="teacher-class-stat-item" style="text-align: right;">
                                 <span class="teacher-class-stat-label">Jurnal Hari Ini</span>
@@ -187,8 +192,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- KELAS TAB LOGIC (Daftar Kelas) ---
     function refreshKelasTab() {
-        const subjects = window.AppState.getSubjects();
+        const subjects = window.AppState.getSubjects().filter(s => s.teacherUsername === currentUser.username);
         const students = window.AppState.getStudents();
+        const classes = window.AppState.getClasses();
         const grid = document.getElementById('daftar-kelas-grid');
         
         if (!grid) return;
@@ -196,31 +202,120 @@ document.addEventListener('DOMContentLoaded', () => {
         grid.innerHTML = '';
         if (subjects.length === 0) {
             grid.innerHTML = '<div style="color:var(--text-muted);">Belum ada kelas yang diampu.</div>';
+        } else {
+            subjects.forEach(sub => {
+                const classNames = (sub.classIds || []).map(cid => {
+                    const c = classes.find(x => x.id === cid);
+                    return c ? c.name : null;
+                }).filter(x => x).join(', ') || 'Belum diplot';
+                const subStudentsCount = students.filter(st => (sub.classIds || []).includes(st.classId)).length;
+
+                const card = document.createElement('div');
+                card.className = 'glass-card teacher-class-card';
+                card.innerHTML = `
+                    <div class="teacher-class-header">
+                        <div>
+                            <div class="teacher-class-name">${escapeHTML(sub.name)} - ${escapeHTML(classNames)}</div>
+                            <div class="teacher-class-sub">Jadwal: ${escapeHTML(sub.schedule)}</div>
+                        </div>
+                    </div>
+                    <div class="teacher-class-stats">
+                        <div class="teacher-class-stat-item">
+                            <span class="teacher-class-stat-label">Total Siswa</span>
+                            <span class="teacher-class-stat-val">${subStudentsCount} Siswa</span>
+                        </div>
+                        <div class="teacher-class-stat-item" style="text-align: right;">
+                            <span class="teacher-class-stat-label">Kode Bergabung</span>
+                            <span class="teacher-class-stat-val" style="color: var(--accent-primary);">${escapeHTML(sub.joinCode)}</span>
+                        </div>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        // Render Student Table
+        renderStudentTable();
+    }
+
+    function renderStudentTable() {
+        const activeSubId = getActiveSubjectId();
+        const subject = window.AppState.getSubjects().find(s => s.id === activeSubId);
+        
+        const tableBody = document.getElementById('student-table-body');
+        if (!tableBody) return;
+        tableBody.innerHTML = '';
+        
+        if (!subject) {
+            tableBody.innerHTML = `<tr><td colspan="4" style="text-align: center; color: var(--text-muted); padding: 20px;">Pilih Mapel terlebih dahulu.</td></tr>`;
             return;
         }
 
-        subjects.forEach(sub => {
-            const card = document.createElement('div');
-            card.className = 'glass-card teacher-class-card';
-            card.innerHTML = `
-                <div class="teacher-class-header">
-                    <div>
-                        <div class="teacher-class-name">${escapeHTML(sub.name)} - VIII-A</div>
-                        <div class="teacher-class-sub">Jadwal: ${escapeHTML(sub.schedule)}</div>
-                    </div>
-                </div>
-                <div class="teacher-class-stats">
-                    <div class="teacher-class-stat-item">
-                        <span class="teacher-class-stat-label">Total Siswa</span>
-                        <span class="teacher-class-stat-val">${students.length} Siswa</span>
-                    </div>
-                    <div class="teacher-class-stat-item" style="text-align: right;">
-                        <span class="teacher-class-stat-label">Kode Bergabung</span>
-                        <span class="teacher-class-stat-val" style="color: var(--accent-primary);">${escapeHTML(sub.joinCode)}</span>
-                    </div>
-                </div>
-            `;
-            grid.appendChild(card);
+        const students = window.AppState.getStudents().filter(s => (subject.classIds || []).includes(s.classId));
+
+        if (students.length === 0) {
+            tableBody.innerHTML = `<tr><td colspan="4" style="text-align: center; color: var(--text-muted); padding: 20px;">Belum ada siswa di kelas Mapel ini.</td></tr>`;
+        } else {
+            students.forEach((s, idx) => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td style="color: var(--text-muted);">${idx + 1}</td>
+                    <td style="font-weight:600;">${escapeHTML(s.name)}</td>
+                    <td><span class="badge badge-info">${escapeHTML(s.username)}</span></td>
+                    <td style="text-align: center;">
+                        <span style="font-size: 11px; color: var(--text-muted);">Diatur Super Admin</span>
+                    </td>
+                `;
+                tableBody.appendChild(tr);
+            });
+
+            tableBody.querySelectorAll('.btn-delete-student').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const id = e.target.getAttribute('data-id');
+                    if (confirm('Apakah Anda yakin ingin menghapus siswa ini?')) {
+                        window.AppState.deleteStudent(id);
+                        refreshKelasTab();
+                        refreshOverviewTab();
+                    }
+                });
+            });
+        }
+    }
+
+    // --- STUDENT MODAL LOGIC ---
+    const studentModal = document.getElementById('student-modal');
+    const studentForm = document.getElementById('student-form');
+    const studentNameInput = document.getElementById('student-name');
+    const btnAddStudent = document.getElementById('btn-add-student');
+    const btnCloseStudentModal = document.getElementById('btn-close-student-modal');
+    const btnCancelStudentModal = document.getElementById('btn-cancel-student-modal');
+
+    if (btnAddStudent) {
+        btnAddStudent.addEventListener('click', () => {
+            studentForm.reset();
+            studentModal.classList.add('active');
+        });
+    }
+
+    if (btnCloseStudentModal) btnCloseStudentModal.addEventListener('click', closeStudentModal);
+    if (btnCancelStudentModal) btnCancelStudentModal.addEventListener('click', closeStudentModal);
+
+    function closeStudentModal() {
+        if (studentModal) studentModal.classList.remove('active');
+    }
+
+    if (studentForm) {
+        studentForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const name = studentNameInput.value.trim();
+            if (!name) return;
+
+            const newStudent = window.AppState.addStudent(name);
+            closeStudentModal();
+            refreshKelasTab();
+            refreshOverviewTab();
+
+            alert(`Siswa "${newStudent.name}" berhasil ditambahkan!\nUsername: ${newStudent.username}\nPassword: password`);
         });
     }
 
@@ -399,6 +494,40 @@ document.addEventListener('DOMContentLoaded', () => {
             refreshOverviewTab();
         }
     });
+
+    // --- MAPEL TAB LOGIC (Read-only, dikelola Super Admin) ---
+    function refreshMapelTab() {
+        // Filter hanya mapel yang diampu oleh guru yang sedang login
+        const subjects = window.AppState.getSubjects().filter(s => s.teacherUsername === currentUser.username);
+        const classes = window.AppState.getClasses();
+        const tableBody = document.getElementById('mapel-table-body');
+        if (!tableBody) return;
+        tableBody.innerHTML = '';
+
+        if (subjects.length === 0) {
+            tableBody.innerHTML = `<tr><td colspan="4" style="text-align: center; color: var(--text-muted); padding: 20px;">Belum ada mata pelajaran yang diampu. Hubungi Super Admin untuk pengaturan.</td></tr>`;
+        } else {
+            subjects.forEach(sub => {
+                // Resolusi nama kelas dari classIds
+                const classNames = (sub.classIds || []).map(cid => {
+                    const c = classes.find(x => x.id === cid);
+                    return c ? c.name : null;
+                }).filter(x => x).join(', ') || '<span style="color:var(--warning)">Belum diplot ke kelas</span>';
+
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td style="font-weight:600;">${escapeHTML(sub.name)}</td>
+                    <td>${escapeHTML(sub.schedule)}</td>
+                    <td><div style="font-size:12px; line-height:1.4;">${classNames}</div></td>
+                    <td><span class="badge badge-info">${escapeHTML(sub.joinCode)}</span></td>
+                `;
+                tableBody.appendChild(tr);
+            });
+        }
+    }
+
+    // CRUD mapel dikelola oleh Super Admin (admin.html)
+    // Tidak ada modal CRUD Mapel di sini
 
     // --- MATERI TAB LOGIC ---
     function refreshMateriTab() {

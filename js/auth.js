@@ -7,22 +7,18 @@ document.addEventListener('DOMContentLoaded', () => {
     const isLoginPage  = !!document.getElementById('login-form');
     const isGuruPage   = !!document.getElementById('welcome-teacher');
     const isSiswaPage  = !!document.getElementById('welcome-student');
-    const isWaliPage   = !!document.getElementById('welcome-wali');
-    
     if (isLoginPage) {
         // If already logged in, redirect to the correct dashboard
         if (user) {
             if (user.role === 'guru') {
                 window.location.href = 'guru.html';
-            } else if (user.role === 'walikelas') {
-                window.location.href = 'wali.html';
             } else if (user.role === 'siswa') {
                 window.location.href = 'siswa.html';
             }
         }
         // Not logged in → stay on login page, do nothing
 
-    } else if (isGuruPage || isSiswaPage || isWaliPage) {
+    } else if (isGuruPage || isSiswaPage) {
         // Protected pages: must be logged in
         if (!user) {
             window.location.href = 'index.html';
@@ -38,10 +34,6 @@ document.addEventListener('DOMContentLoaded', () => {
             redirectByRole(user.role);
             return;
         }
-        if (isWaliPage && user.role !== 'walikelas') {
-            redirectByRole(user.role);
-            return;
-        }
 
         // All checks passed — setup sidebar profile UI
         setupUserProfileUI(user);
@@ -52,8 +44,6 @@ document.addEventListener('DOMContentLoaded', () => {
 function redirectByRole(role) {
     if (role === 'guru') {
         window.location.href = 'guru.html';
-    } else if (role === 'walikelas') {
-        window.location.href = 'wali.html';
     } else {
         window.location.href = 'siswa.html';
     }
@@ -76,8 +66,6 @@ function setupUserProfileUI(user) {
     if (roleEl) {
         if (user.role === 'guru') {
             roleEl.textContent = 'Guru Pengajar';
-        } else if (user.role === 'walikelas') {
-            roleEl.textContent = 'Wali Kelas';
         } else {
             roleEl.textContent = 'Siswa';
         }
