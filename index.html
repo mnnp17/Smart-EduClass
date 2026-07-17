@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Masuk - EduClass AI</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+    <div class="auth-container">
+        <div class="glass-card auth-card fade-in">
+            <div class="auth-logo">
+                <span class="text-gradient">EduClass</span> <span class="text-gradient-purple">AI</span>
+            </div>
+            <div class="auth-subtitle">Platform Pembelajaran Pintar & Tutor AI Kontekstual</div>
+            
+            <div class="role-selector">
+                <div class="role-btn active" data-role="siswa" id="btn-role-siswa">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M12 3L1 9l11 6 9-4.91V17h2V9L12 3zM5.89 12.55L12 15.88l6.11-3.33c.6.9 2.03 3.65 2.03 6.95v.5H3.86v-.5c0-3.3 1.43-6.05 2.03-6.95z"/>
+                    </svg>
+                    <span>Siswa</span>
+                </div>
+                <div class="role-btn" data-role="guru" id="btn-role-guru">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M12 3c-4.97 0-9 4.03-9 9 0 2.12.74 4.07 1.97 5.61L4.35 19.4c-.39.39-.39 1.02 0 1.41.39.39 1.02.39 1.41 0l1.9-1.9C9.22 19.58 10.57 20 12 20c4.97 0 9-4.03 9-9s-4.03-9-9-9zm0 15c-3.31 0-6-2.69-6-6s2.69-6 6-6 6 2.69 6 6-2.69 6-6 6zm-1-8h2v5h-2zm0-3h2v2h-2z"/>
+                    </svg>
+                    <span>Guru</span>
+                </div>
+                <div class="role-btn" data-role="walikelas" id="btn-role-wali">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm6 12H6v-1.5c0-1.99 4-3 6-3s6 1.01 6 3V18z"/>
+                    </svg>
+                    <span>Wali Kelas</span>
+                </div>
+            </div>
+
+            <form class="auth-form" id="login-form">
+                <div class="form-group">
+                    <label for="username">Nama Pengguna (Username)</label>
+                    <div class="input-wrapper">
+                        <input type="text" id="username" class="input-field" placeholder="Masukkan username" required autocomplete="off">
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="password">Kata Sandi</label>
+                    <div class="input-wrapper">
+                        <input type="password" id="password" class="input-field" placeholder="••••••••" required>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn-primary">Masuk ke Kelas</button>
+                <div class="auth-error" id="auth-error-msg"></div>
+            </form>
+
+            <div class="auth-footer">
+                <p>Simulasi Akun Demo:</p>
+                <div style="margin-top: 8px; font-size: 12px; color: var(--text-secondary); line-height: 1.6;">
+                    <strong>Siswa:</strong> <code>siswa</code> / <code>password</code> <br>
+                    <strong>Guru:</strong> <code>guru</code> / <code>password</code> <br>
+                    <strong>Wali Kelas:</strong> <code>wali</code> / <code>password</code>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- State & Auth Files -->
+    <script src="js/state.js"></script>
+    <script src="js/auth.js"></script>
+    
+    <script>
+        // Form & Role selector logic
+        let selectedRole = 'siswa';
+        
+        const btnSiswa = document.getElementById('btn-role-siswa');
+        const btnGuru = document.getElementById('btn-role-guru');
+        const btnWali = document.getElementById('btn-role-wali');
+        const loginForm = document.getElementById('login-form');
+        const usernameInput = document.getElementById('username');
+        const passwordInput = document.getElementById('password');
+        const errorMsg = document.getElementById('auth-error-msg');
+
+        // Set initial values for convenience in demo
+        usernameInput.value = 'siswa';
+        passwordInput.value = 'password';
+
+        btnSiswa.addEventListener('click', () => {
+            selectedRole = 'siswa';
+            btnSiswa.classList.add('active');
+            btnGuru.classList.remove('active');
+            btnWali.classList.remove('active');
+            usernameInput.value = 'siswa';
+            errorMsg.textContent = '';
+        });
+
+        btnGuru.addEventListener('click', () => {
+            selectedRole = 'guru';
+            btnGuru.classList.add('active');
+            btnSiswa.classList.remove('active');
+            btnWali.classList.remove('active');
+            usernameInput.value = 'guru';
+            errorMsg.textContent = '';
+        });
+
+        btnWali.addEventListener('click', () => {
+            selectedRole = 'walikelas';
+            btnWali.classList.add('active');
+            btnSiswa.classList.remove('active');
+            btnGuru.classList.remove('active');
+            usernameInput.value = 'wali';
+            errorMsg.textContent = '';
+        });
+
+        loginForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            errorMsg.textContent = '';
+            
+            const username = usernameInput.value.trim();
+            const password = passwordInput.value;
+            
+            const result = window.AppState.login(username, password);
+            
+            if (result.success) {
+                // Ensure the logged in user matches the selected role for this demo portal interface
+                if (result.user.role !== selectedRole) {
+                    errorMsg.textContent = `User ini terdaftar sebagai ${result.user.role.toUpperCase()}, harap pilih role yang sesuai!`;
+                    window.AppState.logout();
+                    return;
+                }
+                
+                // Redirect according to role
+                if (result.user.role === 'guru') {
+                    window.location.href = 'guru.html';
+                } else if (result.user.role === 'walikelas') {
+                    window.location.href = 'wali.html';
+                } else {
+                    window.location.href = 'siswa.html';
+                }
+            } else {
+                errorMsg.textContent = result.message;
+            }
+        });
+    </script>
+</body>
+</html>
