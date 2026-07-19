@@ -4,12 +4,38 @@ document.addEventListener('DOMContentLoaded', () => {
     // Current teacher info
     const currentUser = window.AppState.getCurrentUser();
     if (currentUser) {
-        document.getElementById('welcome-teacher').textContent = `Selamat Datang, ${currentUser.name}`;
+        const hour = new Date().getHours();
+        let greeting = 'Selamat Datang';
+        let msg = '';
+        if (hour >= 4 && hour < 11) { greeting = 'Selamat Pagi'; msg = 'Mari mulai hari dengan energi positif untuk mendidik generasi bangsa.'; }
+        else if (hour >= 11 && hour < 15) { greeting = 'Selamat Siang'; msg = 'Tetap semangat mendampingi proses belajar siswa di kelas.'; }
+        else if (hour >= 15 && hour < 19) { greeting = 'Selamat Sore'; msg = 'Evaluasi belajar hari ini berjalan dengan sangat baik.'; }
+        else { greeting = 'Selamat Malam'; msg = 'Waktu yang tepat untuk meninjau perkembangan akademik siswa.'; }
+
+        document.getElementById('welcome-teacher').textContent = `${greeting}, ${currentUser.name}! ${msg}`;
+
+        // Homeroom badge
+        const classes = window.AppState.getClasses();
+        const homeroomClass = classes.find(c => c.homeroomTeacherUsername === currentUser.username);
+        const badgeContainer = document.getElementById('homeroom-badge-container');
+        if (homeroomClass && badgeContainer) {
+            badgeContainer.style.display = 'block';
+            document.getElementById('homeroom-class-name').textContent = homeroomClass.name;
+        }
     }
 
     // Set Date
     const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
     document.getElementById('current-date').textContent = new Date().toLocaleDateString('id-ID', options);
+    
+    // Hamburger Toggle
+    const btnHamburger = document.getElementById('btn-hamburger');
+    if (btnHamburger) {
+        btnHamburger.addEventListener('click', () => {
+            document.querySelector('.sidebar').classList.toggle('collapsed');
+            document.querySelector('.main-content').classList.toggle('expanded');
+        });
+    }
 
     // Subject Selector Setup
     const subjectSelect = document.getElementById('teacher-subject-select');
@@ -51,7 +77,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // Tab Switching
-    const menuItems = document.querySelectorAll('.sidebar .menu-item');
+    const menuItems = document.querySelectorAll('.sidebar .menu-item, .bottom-nav .bottom-nav-item');
     const tabPanels = document.querySelectorAll('.main-content .tab-panel');
 
     menuItems.forEach(item => {
@@ -61,7 +87,10 @@ document.addEventListener('DOMContentLoaded', () => {
             menuItems.forEach(i => i.classList.remove('active'));
             tabPanels.forEach(p => p.classList.remove('active'));
             
-            item.classList.add('active');
+            // Activate both sidebar and bottom nav items matching this tab
+            document.querySelectorAll(`.sidebar .menu-item[data-tab="${tabName}"], .bottom-nav .bottom-nav-item[data-tab="${tabName}"]`).forEach(el => {
+                el.classList.add('active');
+            });
             const targetPanel = document.getElementById(`tab-${tabName}`);
             if (targetPanel) targetPanel.classList.add('active');
             
@@ -78,8 +107,6 @@ document.addEventListener('DOMContentLoaded', () => {
             refreshPresensiTab();
         } else if (tabName === 'materi') {
             refreshMateriTab();
-        } else if (tabName === 'mapel') {
-            refreshMapelTab();
         }
     }
 
@@ -139,105 +166,336 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (!activeSubId) {
             document.getElementById('recent-questions-body').innerHTML = `<tr><td colspan="4" style="text-align: center; color: var(--text-muted);">Mata pelajaran belum dipilih.</td></tr>`;
-            document.getElementById('overview-presensi-status').innerHTML = `<div style="color: var(--text-muted);">Tidak ada sesi aktif</div>`;
+            const dContainer = document.getElementById('assignment-deadlines-container');
+            if (dContainer) dContainer.innerHTML = `<div style="text-align: center; color: var(--text-muted); padding: 20px 0;">Mata pelajaran belum dipilih.</div>`;
             return;
         }
 
-        const questions = window.AppState.getQuestions();
-        const session = window.AppState.getAttendanceSession();
+        const activeSub = subjects.find(s => s.id === activeSubId);
+        
+        // 1. Nearest Schedule Banner
+        if (activeSub) {
+            document.getElementById('nearest-schedule-subject').textContent = activeSub.name;
+            // Smart day detection: compare today's day name with the schedule
+            const todayNames = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+            const todayName = todayNames[new Date().getDay()];
+            const scheduleStr = activeSub.schedule || '';
+            // Check if today's day name appears in the schedule string
+            const isToday = todayNames.some(d => d !== 'Minggu' && scheduleStr.includes(d) && d === todayName);
+            const dayLabel = isToday ? 'Hari ini' : (scheduleStr ? `Jadwal ${scheduleStr.split(' ')[0]}` : 'Jadwal Mendatang');
+            document.getElementById('nearest-schedule-detail').textContent = `${dayLabel} • ${scheduleStr || '--:--'} • Ruang Kelas Utama`;
+            // Update banner label
+            const bannerLabel = document.querySelector('.nearest-schedule-banner .banner-label');
+            if (bannerLabel) bannerLabel.textContent = isToday ? '📅 Jadwal Mengajar Hari Ini' : '📅 Jadwal Mengajar Mendatang';
+            const btnSeeSchedule = document.getElementById('btn-see-full-schedule');
+            if (btnSeeSchedule) {
+                btnSeeSchedule.onclick = () => {
+                    const kelasTabBtn = document.querySelector('.sidebar .menu-item[data-tab=kelas]');
+                    if(kelasTabBtn) kelasTabBtn.click();
+                };
+            }
+        }
 
-        // Filter questions belonging to this subject's materials
-        const filteredQuestions = questions.filter(q => {
-            const mat = window.AppState.getMaterials().find(m => m.title === q.materialTitle);
-            return mat && mat.subjectId === activeSubId;
+        // 2. Chart Analytics
+        renderOperationalAnalytics();
+
+        // 3. AI Executive Summary
+        generateAIExecutiveSummary(activeSub, students);
+
+        // 4. Smart AI Insights (Questions)
+        renderSmartAIInsights(activeSubId);
+
+        // 5. Assignment Deadlines Center
+        renderAssignmentDeadlines();
+    }
+
+    function renderOperationalAnalytics() {
+        const ctx = document.getElementById('teacher-analytics-chart');
+        if (!ctx) return;
+        
+        if (window.teacherChart) {
+            window.teacherChart.destroy();
+        }
+        
+        window.teacherChart = new Chart(ctx, {
+            type: 'radar',
+            data: {
+                labels: ['Jurnal', 'Modul', 'Koreksi', 'Kehadiran'],
+                datasets: [{
+                    label: 'Performa Guru',
+                    data: [85, 90, 75, 95], // Dummy metrics
+                    backgroundColor: 'rgba(99, 102, 241, 0.2)',
+                    borderColor: 'rgba(99, 102, 241, 1)',
+                    pointBackgroundColor: 'rgba(99, 102, 241, 1)',
+                    pointBorderColor: '#fff',
+                    pointHoverBackgroundColor: '#fff',
+                    pointHoverBorderColor: 'rgba(99, 102, 241, 1)'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                layout: {
+                    padding: { top: 24, bottom: 24, left: 24, right: 24 }
+                },
+                scales: {
+                    r: {
+                        angleLines: { color: 'rgba(255,255,255,0.1)' },
+                        grid: { color: 'rgba(255,255,255,0.1)' },
+                        pointLabels: { color: 'var(--text-secondary)', font: { size: 11 }, padding: 8 },
+                        ticks: { display: false, max: 100, min: 0 }
+                    }
+                },
+                plugins: { legend: { display: false } }
+            }
+        });
+    }
+
+    function generateAIExecutiveSummary(subject, allStudents) {
+        const textEl = document.getElementById('ai-executive-summary-text');
+        if (!textEl) return;
+        textEl.innerHTML = `Secara keseluruhan, progres kurikulum Anda untuk <b>${escapeHTML(subject.name)}</b> berada di angka <b>72%</b>. Kelas yang Anda ampu menunjukkan peningkatan keaktifan sebesar 15% pada materi terbaru, namun disarankan memberikan perhatian lebih pada 5 siswa yang konsisten mendapat skor kuis di bawah KKM.`;
+    }
+
+    function renderSmartAIInsights(activeSubId) {
+        const questionsBody = document.getElementById('recent-questions-body');
+        if (!questionsBody) return;
+        
+        // Mock Smart AI Insights
+        const insights = [
+            { topic: "Bingung Membedakan Variabel dan Konstanta", count: 12, tag: "kritis", label: "Kritis", colorClass: "kritis" },
+            { topic: "Langkah penyamaan penyebut pecahan", count: 8, tag: "bingung", label: "Bingung", colorClass: "bingung" },
+            { topic: "Rumus Luas Segitiga", count: 15, tag: "tuntas", label: "Tuntas", colorClass: "tuntas" }
+        ];
+
+        questionsBody.innerHTML = '';
+        insights.forEach(ins => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td style="font-weight:600; font-size:13px;">${escapeHTML(ins.topic)}</td>
+                <td style="color:var(--text-secondary);">${ins.count} Siswa</td>
+                <td><span class="smart-tag ${ins.colorClass}">${ins.label}</span></td>
+                <td><button class="btn-action-outline" style="padding: 4px 8px; font-size: 11px;" onclick="alert('Membuka detail pertanyaan siswa ke Tutor AI untuk topik: ${escapeHTML(ins.topic)}')">Lihat Detail Pertanyaan</button></td>
+            `;
+            questionsBody.appendChild(tr);
+        });
+    }
+
+    function renderAssignmentDeadlines() {
+        const container = document.getElementById('assignment-deadlines-container');
+        if (!container) return;
+        
+        // Mock Deadlines
+        const deadlines = [
+            { title: "Tugas Latihan Aljabar Dasar", collected: 25, total: 32, hoursLeft: 4 },
+            { title: "Kuis Pilihan Ganda Logika", collected: 10, total: 32, hoursLeft: 24 }
+        ];
+
+        container.innerHTML = '';
+        deadlines.forEach(d => {
+            container.innerHTML += `
+                <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--glass-border); border-radius: var(--radius-sm); padding: 12px; display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <div style="font-weight: 600; font-size: 13px; margin-bottom: 4px;">${escapeHTML(d.title)}</div>
+                        <div style="font-size: 11px; color: var(--text-secondary);">Terkumpul: ${d.collected}/${d.total} Siswa</div>
+                    </div>
+                    <div style="text-align: right;">
+                        <div style="font-size: 13px; font-weight: 700; color: ${d.hoursLeft <= 12 ? 'var(--danger)' : 'var(--warning)'}; margin-bottom: 2px;">⏰ ${d.hoursLeft} Jam lagi</div>
+                        <div style="font-size: 10px; color: var(--text-muted);">Tutup Otomatis</div>
+                    </div>
+                </div>
+            `;
+        });
+    }
+
+    function refreshKelasTab() {
+        // Show grid view, hide detail view
+        document.getElementById('kelas-grid-view').style.display = 'block';
+        document.getElementById('kelas-detail-view').style.display = 'none';
+
+        const allClasses   = window.AppState.getClasses();
+        const allSubjects  = window.AppState.getSubjects().filter(s => s.teacherUsername === currentUser.username);
+        const allStudents  = window.AppState.getStudents();
+        const grid = document.getElementById('daftar-kelas-grid');
+        if (!grid) return;
+
+        // Collect unique class IDs taught by this teacher
+        const taughtClassIds = new Set();
+        allSubjects.forEach(sub => (sub.classIds || []).forEach(cid => taughtClassIds.add(cid)));
+
+        const taughtClasses = allClasses.filter(c => taughtClassIds.has(c.id));
+
+        grid.innerHTML = '';
+        if (taughtClasses.length === 0) {
+            grid.innerHTML = '<div style="color:var(--text-muted);">Belum ada kelas yang diampu.</div>';
+            return;
+        }
+
+        taughtClasses.forEach(cls => {
+            const studentsInClass = allStudents.filter(s => s.classId === cls.id);
+            const subjectsInClass = allSubjects.filter(s => (s.classIds || []).includes(cls.id));
+
+            const card = document.createElement('div');
+            card.className = 'glass-card teacher-class-card clickable-class-card';
+            card.innerHTML = `
+                <div class="teacher-class-header">
+                    <div>
+                        <div class="teacher-class-name">Kelas ${escapeHTML(cls.name)}</div>
+                        <div class="teacher-class-sub">${subjectsInClass.length} Mata Pelajaran diampu</div>
+                    </div>
+                    <div style="font-size: 28px;">🏫</div>
+                </div>
+                <div class="teacher-class-stats">
+                    <div class="teacher-class-stat-item">
+                        <span class="teacher-class-stat-label">Total Siswa</span>
+                        <span class="teacher-class-stat-val">${studentsInClass.length} Siswa</span>
+                    </div>
+                    <div class="teacher-class-stat-item" style="text-align: right;">
+                        <span class="teacher-class-stat-label">Mapel Diampu</span>
+                        <span class="teacher-class-stat-val" style="color: var(--accent-primary);">${subjectsInClass.map(s => escapeHTML(s.name)).join(', ') || '-'}</span>
+                    </div>
+                </div>
+                <div class="card-drill-hint">
+                    <svg style="width:14px;height:14px;" viewBox="0 0 24 24"><path d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z"/></svg>
+                    Klik untuk melihat detail kelas
+                </div>
+            `;
+            card.addEventListener('click', () => openClassDetail(cls.id));
+            grid.appendChild(card);
         });
 
-        // 3. Questions List
-        const questionsBody = document.getElementById('recent-questions-body');
-        questionsBody.innerHTML = '';
-        
-        if (filteredQuestions.length === 0) {
-            questionsBody.innerHTML = `<tr><td colspan="4" style="text-align: center; color: var(--text-muted);">Belum ada pertanyaan siswa untuk mapel ini.</td></tr>`;
-        } else {
-            filteredQuestions.slice(0, 5).forEach(q => {
-                const timeString = new Date(q.timestamp).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
-                const tr = document.createElement('tr');
-                tr.innerHTML = `
-                    <td style="font-weight:600;">${escapeHTML(q.studentName)}</td>
-                    <td style="color:var(--text-secondary);">${escapeHTML(q.materialTitle)}</td>
-                    <td style="max-width:300px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">"${escapeHTML(q.questionText)}"</td>
-                    <td style="color:var(--text-muted); font-size:12px;">${timeString}</td>
-                `;
-                questionsBody.appendChild(tr);
-            });
-        }
-
-        // 3. Attendance Status Widget
-        const statusWidget = document.getElementById('overview-presensi-status');
-        if (session && session.active && session.subjectId === activeSubId) {
-            statusWidget.innerHTML = `
-                <div style="font-size: 13px; color: var(--text-secondary);">Sesi presensi aktif: <strong>${escapeHTML(getActiveSubjectName())}</strong></div>
-                <div class="code-display" style="font-size:32px; margin: 8px 0;">${session.code}</div>
-                <div style="font-size:12px; color: var(--warning); font-weight:600;">Menunggu siswa masuk...</div>
-                <button class="btn-action-solid" style="margin-top:12px; font-size:12px; padding:6px 12px;" onclick="document.querySelector('[data-tab=presensi]').click()">Lihat Detail Kehadiran</button>
-            `;
-        } else {
-            statusWidget.innerHTML = `
-                <div style="font-size: 40px; margin-bottom: 8px;">⏳</div>
-                <div style="font-size: 13px; color: var(--text-secondary); margin-bottom: 12px;">Tidak ada sesi aktif untuk mapel ini</div>
-                <button class="btn-action-solid" style="font-size:12px; padding:8px 16px;" onclick="document.querySelector('[data-tab=presensi]').click()">Mulai Sesi Presensi</button>
-            `;
+        // Wire up back button
+        const btnBack = document.getElementById('btn-back-to-kelas');
+        if (btnBack) {
+            btnBack.onclick = () => {
+                document.getElementById('kelas-grid-view').style.display = 'block';
+                document.getElementById('kelas-detail-view').style.display = 'none';
+            };
         }
     }
 
-    // --- KELAS TAB LOGIC (Daftar Kelas) ---
-    function refreshKelasTab() {
-        const subjects = window.AppState.getSubjects().filter(s => s.teacherUsername === currentUser.username);
-        const students = window.AppState.getStudents();
-        const classes = window.AppState.getClasses();
-        const grid = document.getElementById('daftar-kelas-grid');
-        
-        if (!grid) return;
-        
-        grid.innerHTML = '';
+    function openClassDetail(classId) {
+        const allClasses  = window.AppState.getClasses();
+        const allSubjects = window.AppState.getSubjects().filter(s => s.teacherUsername === currentUser.username);
+        const allStudents = window.AppState.getStudents();
+
+        const cls = allClasses.find(c => c.id === classId);
+        if (!cls) return;
+
+        // Switch views
+        document.getElementById('kelas-grid-view').style.display = 'none';
+        document.getElementById('kelas-detail-view').style.display = 'block';
+
+        // Set header
+        document.getElementById('kelas-detail-title').textContent = `Kelas ${cls.name}`;
+        const studentsInClass = allStudents.filter(s => s.classId === cls.id);
+        document.getElementById('kelas-detail-sub').textContent =
+            `${studentsInClass.length} siswa terdaftar • ${allSubjects.filter(s => (s.classIds||[]).includes(classId)).length} mata pelajaran`;
+
+        // Sub-tab switching
+        document.querySelectorAll('.kelas-sub-tab').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.kelas-sub-tab').forEach(b => {
+                    b.classList.remove('active');
+                    b.style.borderBottom = '3px solid transparent';
+                    b.style.color = 'var(--text-secondary)';
+                });
+                btn.classList.add('active');
+                btn.style.borderBottom = '3px solid var(--accent-primary)';
+                btn.style.color = 'var(--text-primary)';
+
+                document.querySelectorAll('.kelas-subtab-panel').forEach(p => p.style.display = 'none');
+                const target = document.getElementById(`kelas-subtab-${btn.getAttribute('data-subtab')}`);
+                if (target) target.style.display = 'block';
+            });
+        });
+        // Reset to first sub-tab
+        document.querySelectorAll('.kelas-sub-tab').forEach((b, i) => {
+            b.classList.toggle('active', i === 0);
+            b.style.borderBottom = i === 0 ? '3px solid var(--accent-primary)' : '3px solid transparent';
+            b.style.color = i === 0 ? 'var(--text-primary)' : 'var(--text-secondary)';
+        });
+        document.querySelectorAll('.kelas-subtab-panel').forEach((p, i) => p.style.display = i === 0 ? 'block' : 'none');
+
+        // Render content
+        renderClassSubjects(classId, allSubjects);
+        renderClassStudents(classId, allStudents, allClasses, cls.name);
+
+        // Wire + Tambah Mapel button
+        const btnAddMapel = document.getElementById('btn-add-mapel-in-class');
+        if (btnAddMapel) {
+            btnAddMapel.onclick = () => {
+                alert(`Fitur tambah Mata Pelajaran baru untuk Kelas ${cls.name} akan segera tersedia. Hubungi Super Admin untuk saat ini.`);
+            };
+        }
+    }
+
+    function renderClassSubjects(classId, allSubjects) {
+        const container = document.getElementById('class-subjects-grid');
+        if (!container) return;
+
+        const subjects = allSubjects.filter(s => (s.classIds || []).includes(classId));
+        container.innerHTML = '';
+
         if (subjects.length === 0) {
-            grid.innerHTML = '<div style="color:var(--text-muted);">Belum ada kelas yang diampu.</div>';
-        } else {
-            subjects.forEach(sub => {
-                const classNames = (sub.classIds || []).map(cid => {
-                    const c = classes.find(x => x.id === cid);
-                    return c ? c.name : null;
-                }).filter(x => x).join(', ') || 'Belum diplot';
-                const subStudentsCount = students.filter(st => (sub.classIds || []).includes(st.classId)).length;
-
-                const card = document.createElement('div');
-                card.className = 'glass-card teacher-class-card';
-                card.innerHTML = `
-                    <div class="teacher-class-header">
-                        <div>
-                            <div class="teacher-class-name">${escapeHTML(sub.name)} - ${escapeHTML(classNames)}</div>
-                            <div class="teacher-class-sub">Jadwal: ${escapeHTML(sub.schedule)}</div>
-                        </div>
-                    </div>
-                    <div class="teacher-class-stats">
-                        <div class="teacher-class-stat-item">
-                            <span class="teacher-class-stat-label">Total Siswa</span>
-                            <span class="teacher-class-stat-val">${subStudentsCount} Siswa</span>
-                        </div>
-                        <div class="teacher-class-stat-item" style="text-align: right;">
-                            <span class="teacher-class-stat-label">Kode Bergabung</span>
-                            <span class="teacher-class-stat-val" style="color: var(--accent-primary);">${escapeHTML(sub.joinCode)}</span>
-                        </div>
-                    </div>
-                `;
-                grid.appendChild(card);
-            });
+            container.innerHTML = '<div style="color:var(--text-muted); padding: 20px 0;">Belum ada mata pelajaran di kelas ini.</div>';
+            return;
         }
 
-        // Render Student Table
-        renderStudentTable();
+        const icons = ['📐', '📖', '🔬', '🌍', '🎨', '💻', '🏃'];
+        subjects.forEach((sub, i) => {
+            const card = document.createElement('div');
+            card.className = 'class-subject-card';
+            card.innerHTML = `
+                <div style="display: flex; align-items: center; gap: 14px;">
+                    <div class="subject-icon">${icons[i % icons.length]}</div>
+                    <div>
+                        <div style="font-weight: 700; font-size: 14px; margin-bottom: 2px;">${escapeHTML(sub.name)}</div>
+                        <div style="font-size: 12px; color: var(--text-secondary);">${escapeHTML(sub.schedule)}</div>
+                        <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">Kode: <b style="color:var(--accent-primary);">${escapeHTML(sub.joinCode)}</b></div>
+                    </div>
+                </div>
+                <button class="btn-action-outline" style="padding: 6px 12px; font-size: 11px; white-space: nowrap;">Kelola Modul</button>
+            `;
+            card.querySelector('button').addEventListener('click', () => {
+                document.querySelector('[data-tab=materi]').click();
+            });
+            container.appendChild(card);
+        });
     }
 
+    function renderClassStudents(classId, allStudents, allClasses, className) {
+        const tbody = document.getElementById('class-students-tbody');
+        if (!tbody) return;
+
+        const students = allStudents.filter(s => s.classId === classId);
+        tbody.innerHTML = '';
+
+        if (students.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:var(--text-muted); padding:20px;">Belum ada siswa di kelas ini.</td></tr>`;
+            return;
+        }
+
+        students.forEach((s, idx) => {
+            const tr = document.createElement('tr');
+            tr.className = 'student-row-clickable';
+            tr.innerHTML = `
+                <td style="color:var(--text-muted);">${idx + 1}</td>
+                <td>
+                    <div style="display:flex; align-items:center; gap:10px;">
+                        <div class="avatar" style="width:34px; height:34px; font-size:13px; flex-shrink:0;">${s.name.charAt(0)}</div>
+                        <span style="font-weight:600;">${escapeHTML(s.name)}</span>
+                    </div>
+                </td>
+                <td><span class="badge badge-info">${escapeHTML(s.username)}</span></td>
+                <td><span style="background:rgba(16,185,129,0.15); color:var(--success); padding:3px 10px; border-radius:20px; font-size:11px; font-weight:600;">Aktif</span></td>
+            `;
+            tr.addEventListener('click', () => {});
+            tbody.appendChild(tr);
+        });
+    }
+
+    // old student table (kept for other refs)
     function renderStudentTable() {
         const activeSubId = getActiveSubjectId();
         const subject = window.AppState.getSubjects().find(s => s.id === activeSubId);
@@ -495,37 +753,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // --- MAPEL TAB LOGIC (Read-only, dikelola Super Admin) ---
-    function refreshMapelTab() {
-        // Filter hanya mapel yang diampu oleh guru yang sedang login
-        const subjects = window.AppState.getSubjects().filter(s => s.teacherUsername === currentUser.username);
-        const classes = window.AppState.getClasses();
-        const tableBody = document.getElementById('mapel-table-body');
-        if (!tableBody) return;
-        tableBody.innerHTML = '';
-
-        if (subjects.length === 0) {
-            tableBody.innerHTML = `<tr><td colspan="4" style="text-align: center; color: var(--text-muted); padding: 20px;">Belum ada mata pelajaran yang diampu. Hubungi Super Admin untuk pengaturan.</td></tr>`;
-        } else {
-            subjects.forEach(sub => {
-                // Resolusi nama kelas dari classIds
-                const classNames = (sub.classIds || []).map(cid => {
-                    const c = classes.find(x => x.id === cid);
-                    return c ? c.name : null;
-                }).filter(x => x).join(', ') || '<span style="color:var(--warning)">Belum diplot ke kelas</span>';
-
-                const tr = document.createElement('tr');
-                tr.innerHTML = `
-                    <td style="font-weight:600;">${escapeHTML(sub.name)}</td>
-                    <td>${escapeHTML(sub.schedule)}</td>
-                    <td><div style="font-size:12px; line-height:1.4;">${classNames}</div></td>
-                    <td><span class="badge badge-info">${escapeHTML(sub.joinCode)}</span></td>
-                `;
-                tableBody.appendChild(tr);
-            });
-        }
-    }
-
     // CRUD mapel dikelola oleh Super Admin (admin.html)
     // Tidak ada modal CRUD Mapel di sini
 
@@ -722,6 +949,7 @@ document.addEventListener('DOMContentLoaded', () => {
             .replace(/"/g, '&quot;')
             .replace(/'/g, '&#039;');
     }
+
 
     // Initial Load
     refreshOverviewTab();

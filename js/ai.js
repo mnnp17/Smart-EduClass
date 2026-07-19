@@ -274,6 +274,54 @@ const AIEngine = {
                 page: page
             }
         };
+    },
+
+    // Generate structured bullet-point summary for a material (for left summary panel)
+    generateSummaryBullets(material) {
+        if (!material || !material.pages || material.pages.length === 0) {
+            return [];
+        }
+
+        const bullets = [];
+
+        // Overview bullet from material description
+        if (material.description) {
+            bullets.push({
+                title: 'Gambaran Umum',
+                text: material.description
+            });
+        }
+
+        // One bullet per page — extract key concept from title + first sentence
+        material.pages.forEach((page, idx) => {
+            const content = page.content || '';
+            // Extract first meaningful sentence (up to 160 chars)
+            const firstSentenceMatch = content.match(/^([^.!?\n]{20,160}[.!?])/);
+            const excerpt = firstSentenceMatch
+                ? firstSentenceMatch[1].trim()
+                : content.substring(0, 150).trim() + (content.length > 150 ? '…' : '');
+
+            bullets.push({
+                title: page.title || `Bagian ${idx + 1}`,
+                text: excerpt
+            });
+        });
+
+        // Key concepts: extract words that are capitalized/emphasized (simple heuristic)
+        const allContent = material.pages.map(p => p.content).join(' ');
+        const boldMatches = allContent.match(/[A-Z][a-z]+(?:\s+[A-Z][a-z]+)*/g) || [];
+        const uniqueConcepts = [...new Set(boldMatches)]
+            .filter(w => w.length > 4 && w.split(' ').length <= 3)
+            .slice(0, 5);
+
+        if (uniqueConcepts.length > 0) {
+            bullets.push({
+                title: 'Konsep Kunci',
+                text: uniqueConcepts.join(' • ')
+            });
+        }
+
+        return bullets;
     }
 };
 

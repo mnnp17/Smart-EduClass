@@ -14,13 +14,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const elDate = document.getElementById('current-date');
     if(elDate) elDate.textContent = dateString;
 
-    // Logout
-    document.querySelectorAll('.btn-logout').forEach(btn => {
-        btn.addEventListener('click', () => {
-            AppState.logout();
-            window.location.href = 'index.html';
-        });
-    });
 
     // 2. Tab Navigation
     const tabs = document.querySelectorAll('.sidebar .menu-item');

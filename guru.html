@@ -15,28 +15,27 @@
                 <div class="sidebar-logo">
                     <span class="text-gradient">EduClass</span> <span class="text-gradient-purple">AI</span>
                 </div>
+                <button class="btn-icon" id="btn-hamburger" style="flex-shrink: 0; opacity: 0.7;" title="Toggle Sidebar">
+                    <svg viewBox="0 0 24 24"><path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/></svg>
+                </button>
             </div>
             
             <ul class="sidebar-menu">
                 <li class="menu-item active" data-tab="overview">
                     <svg viewBox="0 0 24 24"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>
-                    <span>General</span>
+                    <span class="menu-text">Dashboard</span>
                 </li>
                 <li class="menu-item" data-tab="kelas">
                     <svg viewBox="0 0 24 24"><path d="M12 3L1 9l11 6 9-4.91V17h2V9L12 3zM5.89 12.55L12 15.88l6.11-3.33c.6.9 2.03 3.65 2.03 6.95v.5H3.86v-.5c0-3.3 1.43-6.05 2.03-6.95z"/></svg>
-                    <span>Daftar Kelas</span>
+                    <span class="menu-text">Daftar Kelas</span>
                 </li>
                 <li class="menu-item" data-tab="presensi">
                     <svg viewBox="0 0 24 24"><path d="M19 3h-4.18C14.4 1.84 13.3 1 12 1c-1.3 0-2.4.84-2.82 2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 0c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zm2 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>
-                    <span>Kelola Presensi</span>
-                </li>
-                <li class="menu-item" data-tab="mapel">
-                    <svg viewBox="0 0 24 24"><path d="M4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm16-4H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-1 9H9V9h10v2zm-4 4H9v-2h6v2zm4-8H9V5h10v2z"/></svg>
-                    <span>Kelola Mapel</span>
+                    <span class="menu-text">Kelola Presensi</span>
                 </li>
                 <li class="menu-item" data-tab="materi">
                     <svg viewBox="0 0 24 24"><path d="M4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm16-4H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-1 9H9V9h10v2zm-4 4H9v-2h6v2zm4-8H9V5h10v2z"/></svg>
-                    <span>Materi & PDF</span>
+                    <span class="menu-text">Materi & PDF</span>
                 </li>
             </ul>
 
@@ -60,6 +59,9 @@
             <header class="header-bar">
                 <div class="welcome-section">
                     <h1 id="welcome-teacher">Selamat Datang, Guru</h1>
+                    <div id="homeroom-badge-container" style="display: none; margin-top: 6px; margin-bottom: 8px;">
+                        <span class="badge" style="background: var(--accent-secondary); color: white; padding: 4px 10px; font-size: 11px;">Wali Kelas: <span id="homeroom-class-name"></span></span>
+                    </div>
                     <p style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
                         <span>Mata Pelajaran Aktif:</span>
                         <select id="teacher-subject-select" class="status-select" style="background-color: var(--bg-tertiary); font-size: 13px; font-weight: 600; padding: 4px 10px;">
@@ -70,93 +72,151 @@
                 </div>
                 <div class="topbar-actions">
                     <button class="btn-icon theme-toggle" id="btn-theme-toggle">
-                        <svg class="sun-icon" viewBox="0 0 24 24"><path d="M12 7c-2.76 0-5 2.24-5 5s2.24 5 5 5 5-2.24 5-5-2.24-5-5-5zM2 13h2c.55 0 1-.45 1-1s-.45-1-1-1H2c-.55 0-1 .45-1 1s.45 1 1 1zm18 0h2c.55 0 1-.45 1-1s-.45-1-1-1h-2c-.55 0-1 .45-1 1s.45 1 1 1zM11 2v2c0 .55.45 1 1 1s1-.45 1-1V2c0-.55-.45-1-1-1s-1 .45-1 1zm0 18v2c0 .55.45 1 1 1s1-.45 1-1v-2c0-.55-.45-1-1-1s-1 .45-1 1zM5.99 4.58c-.39-.39-1.03-.39-1.41 0-.39.39-.39 1.03 0 1.41l1.06 1.06c.39.39 1.03.39 1.41 0 .39-.39.39-1.03 0-1.41L5.99 4.58zm12.37 12.37c-.39-.39-1.03-.39-1.41 0-.39.39-.39 1.03 0 1.41l1.06 1.06c.39.39 1.03.39 1.41 0 .39-.39.39-1.03 0-1.41l-1.06-1.06zm1.06-10.96c.39-.39.39-1.03 0-1.41-.39-.39-1.03-.39-1.41 0l-1.06 1.06c-.39.39-.39 1.03 0 1.41.39.39 1.03.39 1.41 0l1.06-1.06zM7.05 18.36c.39-.39.39-1.03 0-1.41-.39-.39-1.03-.39-1.41 0l-1.06 1.06c-.39.39-.39 1.03 0 1.41.39.39 1.03.39 1.41 0l1.06-1.06z"/></svg>
+                        <svg class="sun-icon" viewBox="0 0 24 24"><path d="M12 7c-2.76 0-5 2.24-5 5s2.24 5 5 5 5-2.24 5-5-2.24-5-5-5zM2 13h2c.55 0 1-.45 1-1s-.45-1-1-1H2c-.55 0-1 .45-1 1s.45 1 1 1zm18 0h2c.55 0 1-.45 1-1s-.45-1-1-1h-2c-.55 0-1 .45-1 1s.45 1 1 1zM11 2v2c0 .55.45 1 1 1s1-.45 1-1V2c0-.55-.45-1-1-1s-1 .45-1 1zm0 18v2c0 .55.45 1 1 1s1-.45 1-1v-2c0-.55-.45-1-1-1s-1 .45-1 1zm5.99 4.58c-.39-.39-1.03-.39-1.41 0-.39.39-.39 1.03 0 1.41l1.06 1.06c.39.39 1.03.39 1.41 0 .39-.39.39-1.03 0-1.41L5.99 4.58zm12.37 12.37c-.39-.39-1.03-.39-1.41 0-.39.39-.39 1.03 0 1.41l1.06 1.06c.39.39 1.03.39 1.41 0 .39-.39.39-1.03 0-1.41l-1.06-1.06zm1.06-10.96c.39-.39.39-1.03 0-1.41-.39-.39-1.03-.39-1.41 0l-1.06 1.06c-.39.39-.39 1.03 0 1.41.39.39 1.03.39 1.41 0l1.06-1.06zM7.05 18.36c.39-.39.39-1.03 0-1.41-.39-.39-1.03-.39-1.41 0l-1.06 1.06c-.39.39-.39 1.03 0 1.41.39.39 1.03.39 1.41 0l1.06-1.06z"/></svg>
                         <svg class="moon-icon" viewBox="0 0 24 24"><path d="M12 3c-4.97 0-9 4.03-9 9s4.03 9 9 9 9-4.03 9-9c0-.46-.04-.92-.1-1.36-.98 1.37-2.58 2.26-4.4 2.26-2.98 0-5.4-2.42-5.4-5.4 0-1.81.89-3.42 2.26-4.4-.44-.06-.9-.1-1.36-.1z"/></svg>
-                    </button>
-                    <button class="btn-icon hamburger-btn" id="btn-hamburger">
-                        <svg viewBox="0 0 24 24"><path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/></svg>
                     </button>
                 </div>
             </header>
 
             <!-- TABS PANELS -->
             
-            <!-- 1. OVERVIEW PANEL -->
+            <!-- 1. DASHBOARD OVERVIEW PANEL -->
             <section id="tab-overview" class="tab-panel active">
                 
-                <!-- Bagian B: Daftar Kelas (Grid) -->
-                <div class="panel-title" style="margin-bottom: 16px;">Daftar Kelas & Mata Pelajaran Anda</div>
-                <div class="teacher-class-grid" id="general-class-grid">
-                    <!-- Loaded dynamically via JS -->
+                <!-- Nearest Schedule Highlight Banner -->
+                <div class="glass-card nearest-schedule-banner" style="margin-bottom: 24px; padding: 24px 32px 24px 24px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
+                    <div>
+                        <div class="banner-label" style="font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; color: rgba(255,255,255,0.8); margin-bottom: 8px;">📅 Jadwal Mengajar Terdekat</div>
+                        <div style="font-size: 20px; font-weight: 700; margin-bottom: 4px;" id="nearest-schedule-subject">Memuat jadwal...</div>
+                        <div style="font-size: 14px; color: rgba(255,255,255,0.9);" id="nearest-schedule-detail">Hari ini • --:-- WIB • Ruang Kelas --</div>
+                    </div>
+                    <button class="btn-action-solid" id="btn-see-full-schedule" style="background: white; color: var(--accent-primary); flex-shrink: 0;">Lihat Jadwal Lengkap</button>
                 </div>
 
-                <div class="dashboard-row" style="margin-top: 32px;">
-                    <!-- Recent Questions Table -->
-                    <div class="glass-card panel-card">
-                        <div class="panel-title">
-                            Pertanyaan Terbaru Siswa ke Tutor AI
+                <!-- Analytics & AI Summary Row -->
+                <div class="dashboard-row" style="margin-bottom: 24px;">
+                    <!-- Teacher Operational Analytics -->
+                    <div class="glass-card panel-card" style="flex: 1;">
+                        <div class="panel-title">Grafik Performa Operasional Guru</div>
+                        <div style="position: relative; height: 250px; width: 100%;">
+                            <canvas id="teacher-analytics-chart"></canvas>
                         </div>
+                    </div>
+
+                    <!-- AI Academic Executive Summary -->
+                    <div class="glass-card panel-card" style="flex: 1; display: flex; flex-direction: column;">
+                        <div class="panel-title">Laporan Akademis Berbasis AI</div>
+                        <div class="ai-summary-box" style="flex-grow: 1; background: rgba(99, 102, 241, 0.05); border: 1px solid rgba(99, 102, 241, 0.2); border-radius: var(--radius-md); padding: 20px; display: flex; flex-direction: column; justify-content: center; position: relative; overflow: hidden;">
+                            <div style="position: absolute; top: -15px; right: -15px; font-size: 80px; opacity: 0.05;">🤖</div>
+                            <div style="font-size: 14px; line-height: 1.6; color: var(--text-primary);" id="ai-executive-summary-text">
+                                Menganalisis data kelas Anda...
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="dashboard-row">
+                    <!-- Smart AI Insights (Siswa Questions) -->
+                    <div class="glass-card panel-card" style="flex: 1.5;">
+                        <div class="panel-title">Smart AI Insights (Pertanyaan Siswa)</div>
                         <div class="table-responsive">
                             <table class="custom-table">
                                 <thead>
                                     <tr>
-                                        <th>Siswa</th>
-                                        <th>Materi</th>
-                                        <th>Pertanyaan</th>
-                                        <th>Waktu</th>
+                                        <th>Topik Pertanyaan (Agregasi)</th>
+                                        <th>Jumlah Siswa</th>
+                                        <th>Status (Smart Tag)</th>
+                                        <th>Aksi</th>
                                     </tr>
                                 </thead>
                                 <tbody id="recent-questions-body">
                                     <tr>
-                                        <td colspan="4" style="text-align: center; color: var(--text-muted);">Belum ada pertanyaan siswa.</td>
+                                        <td colspan="4" style="text-align: center; color: var(--text-muted);">Memuat insights AI...</td>
                                     </tr>
                                 </tbody>
                             </table>
                         </div>
                     </div>
 
-                    <!-- Shortcut Sesi Presensi Quick-view -->
-                    <div class="glass-card panel-card">
-                        <div class="panel-title">Sesi Presensi Aktif</div>
-                        <div id="overview-presensi-status" style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; text-align: center; gap: 16px;">
-                            <!-- Dynamic Content loaded from JS -->
+                    <!-- Assignment Deadlines Center -->
+                    <div class="glass-card panel-card" style="flex: 1;">
+                        <div class="panel-title">Monitoring Batas Waktu Tugas</div>
+                        <div id="assignment-deadlines-container" style="display: flex; flex-direction: column; gap: 12px;">
+                            <div style="text-align: center; color: var(--text-muted); padding: 20px 0;">Memuat tenggat waktu...</div>
                         </div>
                     </div>
                 </div>
             </section>
 
-            <!-- 2. KELAS PANEL (Daftar Kelas) -->
+            <!-- 2. KELAS PANEL (Daftar Kelas) - Two-Phase View -->
             <section id="tab-kelas" class="tab-panel">
-                <div class="glass-card panel-card" style="margin-bottom: 24px;">
-                    <div class="panel-title">Daftar Kelas & Mata Pelajaran</div>
-                    <div class="teacher-class-grid" id="daftar-kelas-grid">
-                        <!-- Dynamic from JS -->
+
+                <!-- Phase 1: Grid View (daftar kelas) -->
+                <div id="kelas-grid-view">
+                    <div class="glass-card panel-card" style="margin-bottom: 24px;">
+                        <div class="panel-title">Daftar Kelas yang Diampu</div>
+                        <div class="teacher-class-grid" id="daftar-kelas-grid">
+                            <!-- Dynamic from JS -->
+                        </div>
                     </div>
                 </div>
 
-                <!-- Section Data Siswa -->
-                <div class="glass-card panel-card">
-                    <div class="panel-title">
-                        <span>Data Siswa Kelas (Dikelola Super Admin)</span>
-                        <button class="btn-action-solid" id="btn-add-student" style="display: none;">
-                            <svg style="width:16px;height:16px;" viewBox="0 0 24 24"><path d="M15 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm-9-2V7H4v3H1v2h3v3h2v-3h3v-2H6zm9 4c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
-                            <span>Tambah Siswa</span>
+                <!-- Phase 2: Detail View (setelah kelas diklik) -->
+                <div id="kelas-detail-view" style="display:none;">
+                    <!-- Back button & header -->
+                    <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 20px;">
+                        <button class="btn-action-outline" id="btn-back-to-kelas" style="padding: 8px 16px; display: flex; align-items: center; gap: 8px;">
+                            <svg style="width:16px;height:16px;" viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+                            <span>Kembali</span>
                         </button>
+                        <div>
+                            <h2 id="kelas-detail-title" style="font-size: 20px; font-weight: 700; margin: 0;">Nama Kelas</h2>
+                            <p id="kelas-detail-sub" style="font-size: 13px; color: var(--text-secondary); margin: 0;">Detail kelas</p>
+                        </div>
                     </div>
-                    <div class="table-responsive">
-                        <table class="custom-table">
-                            <thead>
-                                <tr>
-                                    <th>No</th>
-                                    <th>Nama Siswa</th>
-                                    <th>Username</th>
-                                    <th style="width:100px; text-align: center;">Aksi</th>
-                                </tr>
-                            </thead>
-                            <tbody id="student-table-body">
-                                <!-- Dynamic rows -->
-                            </tbody>
-                        </table>
+
+                    <!-- Sub-Tabs in Detail View -->
+                    <div class="kelas-detail-tabs" style="display: flex; gap: 4px; margin-bottom: 20px; border-bottom: 1px solid var(--glass-border); padding-bottom: 0;">
+                        <button class="kelas-sub-tab active" data-subtab="mapel" style="padding: 10px 18px; background: none; border: none; border-bottom: 3px solid var(--accent-primary); color: var(--text-primary); font-weight: 600; cursor: pointer; font-size: 14px;">📚 Mata Pelajaran</button>
+                        <button class="kelas-sub-tab" data-subtab="siswa" style="padding: 10px 18px; background: none; border: none; border-bottom: 3px solid transparent; color: var(--text-secondary); font-weight: 600; cursor: pointer; font-size: 14px;">👥 Direktori Siswa</button>
+                    </div>
+
+                    <!-- Sub-Tab: Manajemen Mata Pelajaran -->
+                    <div id="kelas-subtab-mapel" class="kelas-subtab-panel">
+                        <div class="glass-card panel-card">
+                            <div class="panel-title">
+                                <span>Mata Pelajaran di Kelas Ini</span>
+                                <button class="btn-action-solid" id="btn-add-mapel-in-class">
+                                    <svg style="width:16px;height:16px;" viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+                                    <span>+ Tambah Mata Pelajaran Baru</span>
+                                </button>
+                            </div>
+                            <div id="class-subjects-grid" class="teacher-class-grid" style="margin-top: 16px;">
+                                <!-- Dynamic -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Sub-Tab: Direktori Siswa -->
+                    <div id="kelas-subtab-siswa" class="kelas-subtab-panel" style="display:none;">
+                        <div class="glass-card panel-card">
+                            <div class="panel-title">Direktori Siswa Kelas Ini</div>
+                            <div class="table-responsive">
+                                <table class="custom-table">
+                                    <thead>
+                                        <tr>
+                                            <th>No</th>
+                                            <th>Profil Siswa</th>
+                                            <th>Username / NISN</th>
+                                            <th>Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="class-students-tbody">
+                                        <!-- Dynamic rows -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </section>
@@ -221,34 +281,7 @@
                 </div>
             </section>
 
-            <!-- 3.5 MAPEL PANEL (CRUD DETAIL MATA PELAJARAN) -->
-            <section id="tab-mapel" class="tab-panel">
-                <div class="glass-card panel-card" style="margin-bottom: 24px;">
-                    <div class="panel-title">
-                        <span>Manajemen Detail Mata Pelajaran (Dikelola Super Admin)</span>
-                        <button class="btn-action-solid" id="btn-add-mapel" style="display: none;">
-                            <svg style="width:16px;height:16px;" viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
-                            <span>Tambah Mapel Baru</span>
-                        </button>
-                    </div>
-                    
-                    <div class="table-responsive">
-                        <table class="custom-table">
-                            <thead>
-                                <tr>
-                                    <th>Nama Mata Pelajaran</th>
-                                    <th>Jadwal Kelas</th>
-                                    <th>Plotting Kelas</th>
-                                    <th>Kode Bergabung</th>
-                                </tr>
-                            </thead>
-                            <tbody id="mapel-table-body">
-                                <!-- Dynamic rows -->
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </section>
+
 
             <!-- 4. MATERI PANEL -->
             <section id="tab-materi" class="tab-panel">
@@ -422,19 +455,15 @@
     <div class="bottom-nav" id="bottom-nav">
         <div class="bottom-nav-item active" data-tab="overview">
             <svg viewBox="0 0 24 24"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>
-            <span>General</span>
+            <span>Dashboard</span>
         </div>
         <div class="bottom-nav-item" data-tab="kelas">
             <svg viewBox="0 0 24 24"><path d="M12 3L1 9l11 6 9-4.91V17h2V9L12 3zM5.89 12.55L12 15.88l6.11-3.33c.6.9 2.03 3.65 2.03 6.95v.5H3.86v-.5c0-3.3 1.43-6.05 2.03-6.95z"/></svg>
-            <span>Daftar Kelas</span>
+            <span>Kelas</span>
         </div>
         <div class="bottom-nav-item" data-tab="presensi">
             <svg viewBox="0 0 24 24"><path d="M19 3h-4.18C14.4 1.84 13.3 1 12 1c-1.3 0-2.4.84-2.82 2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 0c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zm2 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>
             <span>Presensi</span>
-        </div>
-        <div class="bottom-nav-item" data-tab="mapel">
-            <svg viewBox="0 0 24 24"><path d="M4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm16-4H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-1 9H9V9h10v2zm-4 4H9v-2h6v2zm4-8H9V5h10v2z"/></svg>
-            <span>Mapel</span>
         </div>
         <div class="bottom-nav-item" data-tab="materi">
             <svg viewBox="0 0 24 24"><path d="M4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm16-4H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-1 9H9V9h10v2zm-4 4H9v-2h6v2zm4-8H9V5h10v2z"/></svg>
@@ -442,8 +471,11 @@
         </div>
     </div>
 
+
     <!-- State, Auth & Controller Files -->
     <script src="js/state.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="js/dataStore.js"></script>
     <script src="js/auth.js"></script>
     <script src="js/guru.js"></script>
 </body>
